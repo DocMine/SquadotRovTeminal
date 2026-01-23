@@ -3,13 +3,6 @@
 [ext_resource type="Texture2D" uid="uid://duc832ncvqe7n" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="1_i31us"]
 [ext_resource type="Texture2D" uid="uid://bdurvcggoy5lg" path="res://Levels/4_AuthorScene/Imgs/UnderSea.jpg" id="1_onfyf"]
 [ext_resource type="Texture2D" uid="uid://bu6cul6j2baxa" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="2_0anqf"]
-[ext_resource type="Script" uid="uid://cfmyp441t56x6" path="res://Levels/4_AuthorScene/StaffInfo/StaffInfo.gd" id="3_onfyf"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/王扬.tres" id="4_i31us"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/邓云.tres" id="5_0anqf"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/甘永君.tres" id="6_onfyf"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/谢晨曦.tres" id="7_7u82p"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/马克.tres" id="8_cjsiw"]
-[ext_resource type="Resource" path="res://Levels/4_AuthorScene/StaffInfo/刘胤峰.tres" id="9_lc2sa"]
 [ext_resource type="Texture2D" uid="uid://b07m8bu8qxl4t" path="res://Levels/4_AuthorScene/Imgs/Gear.png" id="10_705e6"]
 [ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="11_0anqf"]
 [ext_resource type="FontFile" uid="uid://dc8dje8thcodp" path="res://Levels/1_WelcomeScene/UITheme/庞门正道标题体.TTF" id="11_i31us"]
@@ -183,7 +176,6 @@ AudioPlay = NodePath("AudioStreamPlayer")
 StaffImg = NodePath("VBoxContainer/TextureRect")
 StaffName = NodePath("VBoxContainer/Label")
 Staffinfo = NodePath("../RichTextLabel")
-peopleInfo = Array[ExtResource("3_onfyf")]([ExtResource("4_i31us"), ExtResource("5_0anqf"), ExtResource("6_onfyf"), ExtResource("7_7u82p"), ExtResource("8_cjsiw"), ExtResource("9_lc2sa")])
 
 [node name="Gear" type="Sprite2D" parent="GearPanel" unique_id=212660280]
 modulate = Color(1, 1, 1, 0.898039)
