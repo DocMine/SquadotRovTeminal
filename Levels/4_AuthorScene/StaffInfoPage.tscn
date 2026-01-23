@@ -1,0 +1,247 @@
+[gd_scene load_steps=20 format=3 uid="uid://cp4i43deh6cyx"]
+
+[ext_resource type="Texture2D" uid="uid://duc832ncvqe7n" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="1_i31us"]
+[ext_resource type="Texture2D" uid="uid://bdurvcggoy5lg" path="res://Levels/4_AuthorScene/Imgs/UnderSea.jpg" id="1_onfyf"]
+[ext_resource type="Texture2D" uid="uid://bu6cul6j2baxa" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="2_0anqf"]
+[ext_resource type="Script" uid="uid://cfmyp441t56x6" path="res://Levels/4_AuthorScene/StaffInfo/StaffInfo.gd" id="3_onfyf"]
+[ext_resource type="Resource" uid="uid://jm78xwkyhd56" path="res://Levels/4_AuthorScene/StaffInfo/王扬.tres" id="4_i31us"]
+[ext_resource type="Resource" uid="uid://ceojkdmbcyv7k" path="res://Levels/4_AuthorScene/StaffInfo/邓云.tres" id="5_0anqf"]
+[ext_resource type="Resource" uid="uid://bxkpgckbs6ob7" path="res://Levels/4_AuthorScene/StaffInfo/甘永君.tres" id="6_onfyf"]
+[ext_resource type="Resource" uid="uid://c874u8bfw8dgf" path="res://Levels/4_AuthorScene/StaffInfo/谢晨曦.tres" id="7_7u82p"]
+[ext_resource type="Resource" uid="uid://b1nrkk8hiwycj" path="res://Levels/4_AuthorScene/StaffInfo/马克.tres" id="8_cjsiw"]
+[ext_resource type="Resource" uid="uid://b8o615ryq41wb" path="res://Levels/4_AuthorScene/StaffInfo/刘胤峰.tres" id="9_lc2sa"]
+[ext_resource type="Texture2D" uid="uid://b07m8bu8qxl4t" path="res://Levels/4_AuthorScene/Imgs/Gear.png" id="10_705e6"]
+[ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="11_0anqf"]
+[ext_resource type="FontFile" uid="uid://dc8dje8thcodp" path="res://Levels/1_WelcomeScene/UITheme/庞门正道标题体.TTF" id="11_i31us"]
+
+[sub_resource type="Shader" id="Shader_onfyf"]
+code = "shader_type canvas_item;
+
+uniform float amplitude : hint_range(0.0, 0.1) = 0.02;
+uniform float frequency : hint_range(1.0, 50.0) = 30.0;
+uniform float speed : hint_range(0.0, 10.0) = 0.3
+;
+
+void fragment() {
+    vec2 uv = UV;
+    vec2 center = vec2(0.5);
+    vec2 delta = uv - center;
+    float dist = length(delta);
+    float ripple = sin(dist * frequency - TIME * speed) * amplitude;
+    uv += normalize(delta) * ripple;
+
+    // 采样纹理颜色，并乘上 modulate（节点透明度）
+    COLOR = texture(TEXTURE, uv) * COLOR;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cjsiw"]
+shader = SubResource("Shader_onfyf")
+shader_parameter/amplitude = 0.02
+shader_parameter/frequency = 30.0
+shader_parameter/speed = 0.3
+
+[sub_resource type="GDScript" id="GDScript_1uqat"]
+script/source = "extends TextureRect
+
+@onready var LogoCenter:TextureRect = $RectCenter
+
+func _ready() -> void:
+	await get_tree().process_frame
+	LogoCenter.pivot_offset = Vector2(size.x/2+0.65, size.y/2-15)
+	
+	
+func _physics_process(_delta: float) -> void:
+	LogoCenter.rotation += 0.1
+	if LogoCenter.rotation >= 360:
+		LogoCenter.rotation = 0
+
+func _on_resized() -> void:
+	print(\"resized\")
+	#await get_tree().create_timer(0.2).timeout
+	await get_tree().process_frame
+	LogoCenter.pivot_offset = Vector2(size.x/2+0.65, size.y/2-15)
+"
+
+[sub_resource type="GDScript" id="GDScript_v47f2"]
+script/source = "extends Node2D
+
+@export var GearSprite:Sprite2D
+@export var MousePickArea:Area2D
+@export var AudioPlay:AudioStreamPlayer
+
+@export_category(\"人员信息相关\")
+@export var StaffImg:TextureRect
+@export var StaffName:Label
+@export var Staffinfo:RichTextLabel
+
+var CurrentStaffindex:int = 0 #当前选择的元素
+@export var peopleInfo:Array[Stuffinfo] = []
+var mouseInzoon:bool = false
+var moving:bool = false # 确保转动的动画不会互相干扰
+
+func _ready() -> void:
+	switchStaffIndex(0)
+	pass
+	
+func _physics_process(delta: float) -> void:
+	pass
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			if not moving:
+				moving = true
+				var tween:Tween = create_tween()
+				tween.tween_property(GearSprite,\"rotation\",GearSprite.rotation - 2*PI/len(peopleInfo),0.1)
+				await tween.finished
+				switchStaffIndex(-1)
+				moving = false
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			if not moving:
+				moving = true
+				var tween:Tween = create_tween()
+				tween.tween_property(GearSprite,\"rotation\",GearSprite.rotation + 2*PI/len(peopleInfo),0.1)
+				await tween.finished
+				switchStaffIndex(1)
+				moving = false
+
+func switchStaffIndex(dir:int) -> void:
+	if dir > 0:
+		CurrentStaffindex += 1
+		if CurrentStaffindex > 5:
+			CurrentStaffindex = 0
+	elif dir < 0:
+		CurrentStaffindex -= 1
+		if CurrentStaffindex < 0:
+			CurrentStaffindex = 5
+	
+	StaffImg.texture = peopleInfo[CurrentStaffindex].Img
+	StaffName.text = peopleInfo[CurrentStaffindex].StaffName
+	Staffinfo.text = peopleInfo[CurrentStaffindex].Info
+
+
+func _on_button_pressed() -> void:
+	get_tree().change_scene_to_file(ProjectSettings.get_setting(\"application/run/main_scene\"))
+"
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_0anqf"]
+blend_mode = 4
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1uqat"]
+radius = 450.111
+
+[node name="StaffInfoPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color(0.589096, 0.589096, 0.589095, 1)
+material = SubResource("ShaderMaterial_cjsiw")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_onfyf")
+
+[node name="MovingLogo" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(185, 185)
+layout_mode = 0
+offset_left = 1712.0
+offset_top = 873.0
+offset_right = 1897.0
+offset_bottom = 1058.0
+size_flags_horizontal = 3
+texture = ExtResource("1_i31us")
+expand_mode = 1
+stretch_mode = 5
+script = SubResource("GDScript_1uqat")
+
+[node name="RectCenter" type="TextureRect" parent="MovingLogo"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_0anqf")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GearPanel" type="Node2D" parent="." node_paths=PackedStringArray("GearSprite", "MousePickArea", "AudioPlay", "StaffImg", "StaffName", "Staffinfo")]
+position = Vector2(0, 540)
+script = SubResource("GDScript_v47f2")
+GearSprite = NodePath("Gear")
+MousePickArea = NodePath("Area2D")
+AudioPlay = NodePath("AudioStreamPlayer")
+StaffImg = NodePath("VBoxContainer/TextureRect")
+StaffName = NodePath("VBoxContainer/Label")
+Staffinfo = NodePath("../RichTextLabel")
+peopleInfo = Array[ExtResource("3_onfyf")]([ExtResource("4_i31us"), ExtResource("5_0anqf"), ExtResource("6_onfyf"), ExtResource("7_7u82p"), ExtResource("8_cjsiw"), ExtResource("9_lc2sa")])
+
+[node name="Gear" type="Sprite2D" parent="GearPanel"]
+modulate = Color(1, 1, 1, 0.898039)
+material = SubResource("CanvasItemMaterial_0anqf")
+rotation = -0.279253
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("10_705e6")
+
+[node name="Area2D" type="Area2D" parent="GearPanel"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="GearPanel/Area2D"]
+shape = SubResource("CircleShape2D_1uqat")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="GearPanel"]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GearPanel"]
+offset_left = 163.0
+offset_top = -159.0
+offset_right = 438.0
+offset_bottom = 189.0
+
+[node name="TextureRect" type="TextureRect" parent="GearPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="GearPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+text = "王扬"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RichTextLabel" type="RichTextLabel" parent="."]
+layout_mode = 0
+offset_left = 606.0
+offset_top = 212.0
+offset_right = 1692.0
+offset_bottom = 981.0
+theme_override_font_sizes/normal_font_size = 30
+bbcode_enabled = true
+vertical_alignment = 1
+
+[node name="BackmainButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -506.0
+offset_top = 66.0
+offset_right = -71.0
+offset_bottom = 149.0
+grow_horizontal = 0
+theme = ExtResource("11_0anqf")
+theme_override_fonts/font = ExtResource("11_i31us")
+theme_override_font_sizes/font_size = 32
+text = "回主菜单"
+
+[connection signal="resized" from="MovingLogo" to="MovingLogo" method="_on_resized"]
+[connection signal="pressed" from="BackmainButton" to="GearPanel" method="_on_button_pressed"]

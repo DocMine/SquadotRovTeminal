@@ -1,0 +1,383 @@
+[gd_scene format=3 uid="uid://cp14bqwofs3ay"]
+
+[ext_resource type="PackedScene" uid="uid://dn7jt7c0jfe63" path="res://Levels/1_WelcomeScene/loading_scene.tscn" id="1_04nt6"]
+[ext_resource type="Texture2D" uid="uid://djv2pds1qhv45" path="res://Levels/1_WelcomeScene/Imgs/UnderSea.png" id="1_spnio"]
+[ext_resource type="Texture2D" uid="uid://bptxryefefwvg" path="res://Levels/1_WelcomeScene/Imgs/CausticsTexture.png" id="1_xlqca"]
+[ext_resource type="Texture2D" uid="uid://duc832ncvqe7n" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="3_52ruq"]
+[ext_resource type="Texture2D" uid="uid://bu6cul6j2baxa" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="4_kgcvo"]
+[ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="5_kgcvo"]
+
+[sub_resource type="GDScript" id="GDScript_kgcvo"]
+script/source = "extends Control
+
+@export var ToolButton:Button
+@export var DemonstrationButton:Button
+@export var AuthorButton:Button
+@export var ExitButton:Button
+
+@export_category(\"指向场景\") 
+@export var ToolScenePath:String
+@export var DemonstrationScenePath:String
+@export var AuthorScenePath:String
+@export var LoadingScene:PackedScene
+
+@export_category(\"UI_Scale\") 
+@export var InfoContainer:VBoxContainer
+
+func _ready() -> void:
+	ToolButton.pressed.connect(_on_ToolButton_Pressed)
+	DemonstrationButton.pressed.connect(_on_DemonstrationButton_Pressed)
+	AuthorButton.pressed.connect(_on_AuthorButton_Pressed)
+	ExitButton.pressed.connect(_on_ExitButton_Pressed)
+	
+func loadToScene(_TargetScenePath:String):
+	if not _TargetScenePath:
+		printerr(\"_TargetScenePath NULL\") 
+		return
+	var loadscene:Node = LoadingScene.instantiate()
+	
+	if loadscene:
+		print(\"try open\", _TargetScenePath)
+		loadscene.TargetScenePath = _TargetScenePath
+		print(\"loadS:\", loadscene.TargetScenePath)
+		var _Scene:PackedScene = PackedScene.new()
+		_Scene.pack(loadscene)
+		get_tree().change_scene_to_packed(_Scene)
+
+func _on_ToolButton_Pressed():
+	loadToScene(ToolScenePath)
+	
+func _on_DemonstrationButton_Pressed():
+	loadToScene(DemonstrationScenePath)
+
+
+func _on_AuthorButton_Pressed():
+	loadToScene(AuthorScenePath)
+
+
+func _on_ExitButton_Pressed():
+	get_tree().quit()
+"
+
+[sub_resource type="Shader" id="Shader_04nt6"]
+code = "shader_type canvas_item;
+render_mode blend_add, unshaded;   // 加法混合 & 不受灯光影响
+
+uniform sampler2D caustics_tex : source_color; // 光斑纹理（记得在导入界面把 Repeat 打开）
+uniform float  tiling              = 1.0;      // 光斑密度
+uniform float  speed_layer1        = 0.05;
+uniform float  speed_layer2        = 0.05;
+uniform float  distortion_strength = 0.01;     // 波浪扰动幅度
+uniform float  intensity           = 1.0;      // 整体亮度
+
+void fragment()
+{
+    /* -------------------- 基础 UV & 包裹 -------------------- */
+    vec2 uv = UV * tiling;              // 放大到多瓦片
+    uv = fract(uv);                     // 保证 0‑1（即便纹理 Repeat 没开也能循环）
+
+    /* -------------------- 两层滚动光斑 -------------------- */
+    vec2 scroll1 = uv + vec2( TIME * speed_layer1, TIME * speed_layer1 * 0.6 );
+    vec2 scroll2 = uv - vec2( TIME * speed_layer2 * 0.8, TIME * speed_layer2 );
+
+    /* -------------------- 简单波浪扰动（可替换成噪声或 flow map） -------------------- */
+    float wave = sin( (UV.x + UV.y) * 20.0 + TIME * 2.0 ) * distortion_strength;
+    scroll1 += wave;
+    scroll2 -= wave;
+
+    /* -------------------- 取样并合成 -------------------- */
+    float l1 = texture(caustics_tex, fract(scroll1)).r;
+    float l2 = texture(caustics_tex, fract(scroll2)).r;
+
+    // 你可以尝试 max(l1,l2)、(l1+l2)*0.5 等不同混合法，这里用 max 保持亮点清晰
+    float light = max(l1, l2) * intensity;
+
+    COLOR = vec4(vec3(light), light);   // 加法混合下，α 也叠加进亮度
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xlqca"]
+shader = SubResource("Shader_04nt6")
+shader_parameter/caustics_tex = ExtResource("1_xlqca")
+shader_parameter/tiling = 1.15
+shader_parameter/speed_layer1 = 0.01
+shader_parameter/speed_layer2 = 0.01
+shader_parameter/distortion_strength = 0.01
+shader_parameter/intensity = 0.245
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_xlqca"]
+
+[sub_resource type="GDScript" id="GDScript_04nt6"]
+script/source = "extends TextureRect
+
+@onready var LogoCenter:TextureRect = $RectCenter
+
+func _physics_process(_delta: float) -> void:
+	LogoCenter.rotation += 0.1
+	if LogoCenter.rotation >= 360:
+		LogoCenter.rotation = 0
+
+func _on_resized() -> void:
+	print(\"resized\")
+	#await get_tree().create_timer(0.2).timeout
+	await get_tree().process_frame
+	LogoCenter.pivot_offset = Vector2(size.x/2+0.65, size.y/2-15)
+"
+
+[sub_resource type="Animation" id="Animation_72pl4"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_constants/shadow_offset_x")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_constants/shadow_offset_y")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [5]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_colors/font_shadow_color")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(0.351563, 0.351563, 0.351563, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_04nt6"]
+resource_name = "shake"
+length = 3.0
+loop_mode = 1
+step = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_constants/shadow_offset_x")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1, 3),
+"transitions": PackedFloat32Array(0.5, 0.5, 0.5),
+"update": 0,
+"values": [5, 10, 5]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_constants/shadow_offset_y")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1, 3),
+"transitions": PackedFloat32Array(0.5, 0.5, 0.5),
+"update": 0,
+"values": [5, 10, 5]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/MainTitle:theme_override_colors/font_shadow_color")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 1, 2.99),
+"transitions": PackedFloat32Array(0.5, 0.5, 0.5),
+"update": 0,
+"values": [Color(0.351563, 0.351563, 0.351563, 1), Color(1.20327e-06, 0.403279, 0.431327, 0.752941), Color(0.351577, 0.351577, 0.351577, 0.997529)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_oejcp"]
+_data = {
+&"RESET": SubResource("Animation_72pl4"),
+&"shake": SubResource("Animation_04nt6")
+}
+
+[node name="UI" type="Control" unique_id=99069433 node_paths=PackedStringArray("ToolButton", "DemonstrationButton", "AuthorButton", "ExitButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = SubResource("GDScript_kgcvo")
+ToolButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button")
+DemonstrationButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button2")
+AuthorButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button3")
+ExitButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/ButtonExit")
+ToolScenePath = "res://Levels/2_RovSelectScene/selection_page.tscn"
+AuthorScenePath = "res://Levels/4_AuthorScene/StaffInfoPage.tscn"
+LoadingScene = ExtResource("1_04nt6")
+
+[node name="BG" type="TextureRect" parent="." unique_id=282552935]
+modulate = Color(0.577008, 0.577008, 0.577008, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_spnio")
+expand_mode = 5
+stretch_mode = 4
+metadata/_edit_lock_ = true
+
+[node name="TextureRect" type="TextureRect" parent="BG" unique_id=805399643]
+material = SubResource("ShaderMaterial_xlqca")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -3.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("NoiseTexture2D_xlqca")
+expand_mode = 1
+metadata/_edit_lock_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1806064157]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 300
+theme_override_constants/margin_top = 200
+theme_override_constants/margin_right = 300
+theme_override_constants/margin_bottom = 200
+
+[node name="AllInfoBox" type="VBoxContainer" parent="MarginContainer" unique_id=2036327203]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/AllInfoBox" unique_id=711864774]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="MovingLogo" type="TextureRect" parent="MarginContainer/AllInfoBox/HBoxContainer" unique_id=229981300]
+custom_minimum_size = Vector2(185, 185)
+layout_mode = 2
+size_flags_horizontal = 3
+texture = ExtResource("3_52ruq")
+expand_mode = 1
+stretch_mode = 5
+script = SubResource("GDScript_04nt6")
+
+[node name="RectCenter" type="TextureRect" parent="MarginContainer/AllInfoBox/HBoxContainer/MovingLogo" unique_id=680196131]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_kgcvo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/AllInfoBox/HBoxContainer" unique_id=771771427]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 8
+
+[node name="MainTitle" type="Label" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer" unique_id=1045734125]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.351563, 0.351563, 0.351563, 1)
+theme_override_colors/font_outline_color = Color(0.180005, 0.180005, 0.180005, 1)
+theme_override_constants/shadow_offset_x = 5
+theme_override_constants/shadow_offset_y = 5
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 90
+text = "水下机器人综合实验程序"
+
+[node name="SubTitle" type="Label" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer" unique_id=1816671580]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.351563, 0.351563, 0.351563, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 5
+theme_override_constants/shadow_offset_y = 5
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 42
+text = "Underwater Robotics Integrated Learning Suite"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/SubTitle" unique_id=1665183801]
+root_node = NodePath("../../../../../..")
+libraries/ = SubResource("AnimationLibrary_oejcp")
+autoplay = &"shake"
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/AllInfoBox" unique_id=228838934]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 200
+theme_override_constants/margin_top = 150
+theme_override_constants/margin_right = 200
+theme_override_constants/margin_bottom = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/AllInfoBox/MarginContainer" unique_id=956291082]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=570777441]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+text = "水下机器人套件控制"
+
+[node name="Button2" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1268985826]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+text = "构建ROV实例"
+
+[node name="Button3" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1552676748]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+text = "制作团队"
+
+[node name="ButtonExit" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=189093758]
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+text = "退出系统"
+
+[node name="Verson" type="Label" parent="." unique_id=1138016073]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -121.0
+offset_top = -34.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+text = "Verson 0.1"
+
+[connection signal="resized" from="MarginContainer/AllInfoBox/HBoxContainer/MovingLogo" to="MarginContainer/AllInfoBox/HBoxContainer/MovingLogo" method="_on_resized"]

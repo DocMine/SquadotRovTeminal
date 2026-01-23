@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Stuffinfo" load_steps=3 format=3 uid="uid://jm78xwkyhd56"]
+
+[ext_resource type="Texture2D" uid="uid://bap73auxop40u" path="res://Levels/4_AuthorScene/Imgs/王扬.png" id="1_5bilq"]
+[ext_resource type="Script" uid="uid://cfmyp441t56x6" path="res://Levels/4_AuthorScene/StaffInfo/StaffInfo.gd" id="2_7x446"]
+
+[resource]
+script = ExtResource("2_7x446")
+Img = ExtResource("1_5bilq")
+StaffName = "王扬"
+Info = "中国科学院声学研究所博士[p]北京信息科技大学副教授、硕士生导师[p]现任电子信息与控制国家级实验教学示范中心实验室主任[p][p]科研创新方面，长期深耕水下机器人设计与研发，主持完成声场声信息国家重点实验室、水声技术国家重点实验室委托的重要课题，完成并交付了水下航行器多源信息融合的导航方法、基于图像和声呐信息的水下SLAM方法、水声反射体姿态自动调整系统等研究成果。项目中带领团队攻克水下同步定位、极端环境适应等关键技术难题，相关成果将在港口巡检、极地科考、水声测试等领域实现工程应用。[p]人才培养方面，2024年被评为北京高校优秀大学生学科竞赛指导教师，所指导的学生团队累计获得国家级奖项80余项。担任中国仿真学会机器人仿真专委会委员、国际先进机器人及仿真技术大赛水下操控组裁判长等学术职务，推动行业技术标准制定与专业人才培养。[p]目前主要研究方向包括：水下航行器设计与研发、水下运动体导航与控制、多传感器信息融合等。其带领的科研团队与中科院、大连理工、哈工程等机构保持深度合作，致力于智能海洋装备的技术创新与产业化应用。[p][/p]"
+metadata/_custom_type_script = "uid://cfmyp441t56x6"

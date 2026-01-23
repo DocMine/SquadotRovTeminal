@@ -1,0 +1,231 @@
+[gd_scene format=3 uid="uid://c1m7dd1kyk6b"]
+
+[ext_resource type="PackedScene" uid="uid://bg61maepl7gnm" path="res://Global_assets/ExtractModels/Rov4Push_Basic.tscn" id="1_exykd"]
+[ext_resource type="Texture2D" uid="uid://bk87uuf6m4kb8" path="res://Levels/2_RovSelectScene/pool_2k.hdr" id="1_tjowo"]
+[ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="3_a4wml"]
+[ext_resource type="FontFile" uid="uid://dc8dje8thcodp" path="res://Levels/1_WelcomeScene/UITheme/庞门正道标题体.TTF" id="4_a6t5g"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_a4wml"]
+panorama = ExtResource("1_tjowo")
+energy_multiplier = 0.1
+
+[sub_resource type="Sky" id="Sky_exykd"]
+sky_material = SubResource("PanoramaSkyMaterial_a4wml")
+
+[sub_resource type="Environment" id="Environment_tjowo"]
+background_mode = 2
+sky = SubResource("Sky_exykd")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="GDScript" id="GDScript_exykd"]
+script/source = "extends CSGCylinder3D
+
+func _physics_process(_delta: float) -> void:
+	rotate(Vector3(0,1,0), 0.3*_delta)
+"
+
+[sub_resource type="GDScript" id="GDScript_a6t5g"]
+script/source = "extends Control
+
+
+func _on_backmain_button_pressed() -> void:
+	get_tree().change_scene_to_file(ProjectSettings.get_setting(\"application/run/main_scene\"))
+
+
+func _on_button_pressed() -> void:
+	# 仿真按钮
+	# 目前直接到指定的仿真界面
+	get_tree().change_scene_to_file(\"res://Levels/5_RovTestGround/Scenes/new_test_sim.tscn\")
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a6t5g"]
+bg_color = Color(0, 0.121569, 0.231373, 0.87451)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="Animation" id="Animation_a6t5g"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible_ratio")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [1.0]
+}
+
+[sub_resource type="Animation" id="Animation_a4wml"]
+resource_name = "showText"
+length = 2.0
+step = 0.1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:visible_ratio")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0333334, 2),
+"transitions": PackedFloat32Array(-2, -2),
+"update": 0,
+"values": [0.0, 1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_64ala"]
+_data = {
+&"RESET": SubResource("Animation_a6t5g"),
+&"showText": SubResource("Animation_a4wml")
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a4wml"]
+bg_color = Color(0, 0.12549, 0.254902, 0.756863)
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+
+[node name="SelectionPage" type="Node3D" unique_id=1892966114]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=842489662]
+environment = SubResource("Environment_tjowo")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1055353057]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="ROV_4push" parent="DirectionalLight3D" unique_id=1846470091 instance=ExtResource("1_exykd")]
+transform = Transform3D(-0.866023, 0, -0.500003, -0.433016, 0.499998, 0.749999, 0.250001, 0.866027, -0.43301, 0, 0.0499998, 0.0866027)
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="." unique_id=792781139]
+radius = 8.346
+height = 0.1
+sides = 64
+script = SubResource("GDScript_exykd")
+
+[node name="Camera3D" type="Camera3D" parent="CSGCylinder3D" unique_id=897157158]
+transform = Transform3D(1, 0, 0, 0, 0.921464, 0.388465, 0, -0.388465, 0.921464, 0, 7.10556, 12.0731)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=655456294]
+
+[node name="RovSelectUI" type="Control" parent="CanvasLayer" unique_id=303535380]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("3_a4wml")
+script = SubResource("GDScript_a6t5g")
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/RovSelectUI" unique_id=1685168074]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -500.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 50
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/RovSelectUI/MarginContainer" unique_id=1364616414]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer" unique_id=1067527299]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+theme = ExtResource("3_a4wml")
+theme_override_font_sizes/font_size = 38
+theme_override_styles/normal = SubResource("StyleBoxFlat_a6t5g")
+text = "设备参数"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ROVInfo" type="RichTextLabel" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer" unique_id=214490871]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[indent]外形尺寸：430mm×360mm×300mm
+机身净重：7.8kg
+配色：黑色
+输入电压：48V DC
+额定电流：10A
+控制器	：ARM Cortex M4，168 MHz，
+          256 KB RAM，2 MB Flash
+传感器	：	MPU6000主加速度计和陀螺仪；
+            ST Micro陀螺仪
+加速度计/指南针；MEAS气压计
+视频分辨率：1080p
+零浮力线缆：长度：30米；工作拉力：60KG
+星光级镜头：120°广角；200万像素
+           支持录像、摄影
+标称深度：100米
+
+运动机能：水平方向矢量平移；垂直方向矢量平移；
+         多轴姿态控制；360°水平旋转
+
+特殊功能：自动定深度；实时温度检测；
+         舱内电压监测；实时姿态等显示；
+         机器定深；自稳功能[/indent]"
+vertical_alignment = 1
+justification_flags = 0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer/ROVInfo" unique_id=767976224]
+libraries/ = SubResource("AnimationLibrary_64ala")
+autoplay = &"showText"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer" unique_id=1997319779]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.3
+
+[node name="Button" type="Button" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer/VBoxContainer" unique_id=566774234]
+layout_mode = 2
+size_flags_vertical = 3
+text = "仿真操作"
+
+[node name="Button2" type="Button" parent="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer/VBoxContainer" unique_id=1439045384]
+layout_mode = 2
+size_flags_vertical = 3
+text = "硬件连接"
+
+[node name="RovNameLable" type="Label" parent="CanvasLayer/RovSelectUI" unique_id=1725926242]
+layout_mode = 1
+offset_left = -8.0
+offset_top = 22.0
+offset_right = 824.0
+offset_bottom = 155.0
+theme_override_font_sizes/font_size = 54
+theme_override_styles/normal = SubResource("StyleBoxFlat_a4wml")
+text = "FD-ROV-FLS-60  四芒星"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackmainButton" type="Button" parent="CanvasLayer/RovSelectUI" unique_id=1532588346]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 51.0
+offset_top = -137.0
+offset_right = 486.0
+offset_bottom = -54.0
+grow_vertical = 0
+theme = ExtResource("3_a4wml")
+theme_override_fonts/font = ExtResource("4_a6t5g")
+theme_override_font_sizes/font_size = 32
+text = "回主菜单"
+
+[connection signal="pressed" from="CanvasLayer/RovSelectUI/MarginContainer/VBoxContainer/VBoxContainer/Button" to="CanvasLayer/RovSelectUI" method="_on_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/RovSelectUI/BackmainButton" to="CanvasLayer/RovSelectUI" method="_on_backmain_button_pressed"]

@@ -1,0 +1,56 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[ambientcg]
+
+extract_path="res://AmbientCG/Extracted"
+material_file_directory="res://AmbientCG/Materials"
+environment_file_directory="res://AmbientCG/Environments"
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="SquadotRovTeminal"
+run/main_scene="uid://cp14bqwofs3ay"
+config/features=PackedStringArray("4.6", "Forward Plus")
+boot_splash/show_image=false
+boot_splash/stretch_mode=0
+boot_splash/use_filter=false
+config/icon="res://icon.svg"
+
+[autoload]
+
+AmbientAPI="*uid://cmbh88h6yljhy"
+AmbientParser="*uid://dcdrqnwmpgvk4"
+AmbientFileHandler="*uid://dnh8sqjyu74hs"
+AmbientMaterialMaker="*uid://nig0lamfd3mv"
+
+[compression]
+
+formats/gzip/compression_level=9
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/graph_2d/plugin.cfg")
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+textures/canvas_textures/default_texture_repeat=1
+anti_aliasing/quality/msaa_3d=3

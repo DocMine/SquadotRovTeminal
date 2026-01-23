@@ -1,0 +1,182 @@
+[gd_scene format=3 uid="uid://b0lv00ep44vtv"]
+
+[ext_resource type="Script" uid="uid://hl72hg1iy1di" path="res://addons/graph_2d/graph_2d.gd" id="1_ec6i5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3oun4"]
+bg_color = Color(6.497651e-07, 0.21450546, 0.34496844, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+shadow_color = Color(0.015003967, 2.4065375e-08, 0.3678201, 0.5529412)
+shadow_size = 5
+
+[sub_resource type="GDScript" id="GDScript_hamj1"]
+script/source = "extends Panel
+
+# 从指定的ROVstate节点读取数据并显示
+@export var rov_state:ROVState
+
+# UI节点引用
+@export var Ola_x:Label
+@export var Ola_y:Label
+@export var Ola_z:Label
+
+@export var Rov_Basis_a:Label
+@export var Rov_Basis_b:Label
+@export var Rov_Basis_c:Label
+@export var Rov_Basis_d:Label
+
+@export var deepthLabel:Label
+@export var graph:Graph2D
+
+@export var TemperatureLabel:Label
+#@export var deepthLabel:Label
+
+@onready var deep_plot:PlotItem = graph.add_plot_item(\"DEEP\", Color.GREEN, 1.0)
+@onready var Temp_plot:PlotItem = graph.add_plot_item(\"TEMP\", Color.RED, 1.0)
+
+func _ready() -> void:
+	pass
+
+func _updateZitaiData():
+	# 显示姿态数据
+	Ola_x.text = \"pitch: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).x
+	Ola_y.text = \"yaw: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).y
+	Ola_z.text = \"roll: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).z
+	
+	Rov_Basis_a.text = \"w: %.2f\" % rov_state.imu_orientation.w
+	Rov_Basis_b.text = \"x: %.2f\" % rov_state.imu_orientation.x
+	Rov_Basis_c.text = \"y: %.2f\" % rov_state.imu_orientation.y
+	Rov_Basis_d.text = \"z: %.2f\" % rov_state.imu_orientation.z
+	
+	deepthLabel.text = \"  %.2f m\" % (rov_state.depth/10.0)
+	graph.x_max = Time.get_ticks_msec()/100.0
+	graph.x_min = graph.x_max - 100.0
+	deep_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.depth))
+	
+	TemperatureLabel.text = \"  %.2f ℃\" % rov_state.water_temperature
+	Temp_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.water_temperature))
+
+func _physics_process(_delta: float) -> void:
+	_updateZitaiData()
+"
+
+[node name="RovstatePanel" type="Panel" unique_id=809738074 node_paths=PackedStringArray("Ola_x", "Ola_y", "Ola_z", "Rov_Basis_a", "Rov_Basis_b", "Rov_Basis_c", "Rov_Basis_d", "deepthLabel", "graph", "TemperatureLabel")]
+anchors_preset = -1
+anchor_left = 0.9734375
+anchor_top = 0.042592593
+anchor_right = 0.9734375
+anchor_bottom = 0.25277779
+offset_left = -299.0
+offset_bottom = 340.0
+grow_horizontal = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_3oun4")
+script = SubResource("GDScript_hamj1")
+Ola_x = NodePath("MarginContainer/DataShow/HBoxContainer/Label2")
+Ola_y = NodePath("MarginContainer/DataShow/HBoxContainer/Label3")
+Ola_z = NodePath("MarginContainer/DataShow/HBoxContainer/Label4")
+Rov_Basis_a = NodePath("MarginContainer/DataShow/HBoxContainer2/Label2")
+Rov_Basis_b = NodePath("MarginContainer/DataShow/HBoxContainer2/Label3")
+Rov_Basis_c = NodePath("MarginContainer/DataShow/HBoxContainer2/Label4")
+Rov_Basis_d = NodePath("MarginContainer/DataShow/HBoxContainer2/Label5")
+deepthLabel = NodePath("MarginContainer/DataShow/HBoxContainer3/Label2")
+graph = NodePath("MarginContainer/DataShow/Graph2D")
+TemperatureLabel = NodePath("MarginContainer/DataShow/HBoxContainer4/Label2")
+metadata/_edit_use_anchors_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1909372536]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="DataShow" type="VBoxContainer" parent="MarginContainer" unique_id=164823572]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="MarginContainer/DataShow" unique_id=1692127771]
+layout_mode = 2
+text = "当前姿态--欧拉:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/DataShow" unique_id=768060388]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="MarginContainer/DataShow/HBoxContainer" unique_id=1343538884]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label3" type="Label" parent="MarginContainer/DataShow/HBoxContainer" unique_id=436568965]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label4" type="Label" parent="MarginContainer/DataShow/HBoxContainer" unique_id=1717843236]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="Label2" type="Label" parent="MarginContainer/DataShow" unique_id=1528832897]
+layout_mode = 2
+text = "当前姿态--四元数:"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/DataShow" unique_id=716539420]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="MarginContainer/DataShow/HBoxContainer2" unique_id=1598305625]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "W"
+
+[node name="Label3" type="Label" parent="MarginContainer/DataShow/HBoxContainer2" unique_id=1215601057]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label4" type="Label" parent="MarginContainer/DataShow/HBoxContainer2" unique_id=337399067]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label5" type="Label" parent="MarginContainer/DataShow/HBoxContainer2" unique_id=1165999525]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="MarginContainer/DataShow" unique_id=1282052417]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="MarginContainer/DataShow/HBoxContainer3" unique_id=826812712]
+layout_mode = 2
+text = "深度传感器读数:"
+
+[node name="Label2" type="Label" parent="MarginContainer/DataShow/HBoxContainer3" unique_id=1747064759]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="MarginContainer/DataShow" unique_id=1903913908]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="MarginContainer/DataShow/HBoxContainer4" unique_id=1470377571]
+layout_mode = 2
+text = "温度传感器读数:"
+
+[node name="Label2" type="Label" parent="MarginContainer/DataShow/HBoxContainer4" unique_id=1042935525]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Graph2D" type="Control" parent="MarginContainer/DataShow" unique_id=943169736]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_ec6i5")
+y_max = 30.0
+metadata/_custom_type_script = "uid://hl72hg1iy1di"
