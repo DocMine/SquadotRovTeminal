@@ -273,6 +273,7 @@ layout_mode = 2
 size_flags_vertical = 0
 
 [node name="MovingLogo" type="TextureRect" parent="MarginContainer/AllInfoBox/HBoxContainer" unique_id=229981300]
+visible = false
 custom_minimum_size = Vector2(185, 185)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -309,7 +310,8 @@ theme_override_constants/shadow_offset_x = 5
 theme_override_constants/shadow_offset_y = 5
 theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 90
-text = "水下机器人综合实验程序"
+text = "水下机器人模拟器"
+horizontal_alignment = 1
 
 [node name="SubTitle" type="Label" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer" unique_id=1816671580]
 layout_mode = 2
@@ -324,6 +326,7 @@ theme_override_constants/shadow_offset_y = 5
 theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 42
 text = "Underwater Robotics Integrated Learning Suite"
+horizontal_alignment = 1
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer/SubTitle" unique_id=1665183801]
 root_node = NodePath("../../../../../..")
@@ -346,7 +349,7 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
-text = "水下机器人套件控制"
+text = "机器人控制"
 
 [node name="Button2" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1268985826]
 layout_mode = 2
@@ -355,6 +358,7 @@ theme = ExtResource("5_kgcvo")
 text = "构建ROV实例"
 
 [node name="Button3" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1552676748]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
