@@ -675,9 +675,9 @@ mouse_filter = 2
 script = SubResource("GDScript_cig8n")
 FCnode = NodePath("..")
 rov_state = NodePath("../../RovState")
-pitch_ctrl_node = NodePath("PID_cUI/PID_Ctrl_panel")
-roll_ctrl_node = NodePath("PID_cUI/PID_Ctrl_panel2")
-yaw_ctrl_node = NodePath("PID_cUI/PID_Ctrl_panel3")
+pitch_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel")
+roll_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel2")
+yaw_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel3")
 StateNode = NodePath("RovstatePanel")
 
 [node name="Rov_Ctrl_UI" type="VBoxContainer" parent="FlyControl/FC_UI" unique_id=1434957430]
@@ -731,36 +731,62 @@ step = 0.01
 script = SubResource("GDScript_q1wnw")
 pusher = NodePath("../../../../Thrusters/RB")
 
-[node name="PID_cUI" type="VBoxContainer" parent="FlyControl/FC_UI" unique_id=792313236]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.046875
-anchor_top = 0.95185184
-anchor_right = 0.046875
-anchor_bottom = 0.95185184
-offset_top = -620.0
-offset_right = 413.0
-grow_vertical = 0
-theme_override_constants/separation = 10
-metadata/_edit_use_anchors_ = true
-
-[node name="PID_Ctrl_panel" parent="FlyControl/FC_UI/PID_cUI" unique_id=1787426440 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "俯仰调节"
-
-[node name="PID_Ctrl_panel2" parent="FlyControl/FC_UI/PID_cUI" unique_id=180500268 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "横滚调节"
-
-[node name="PID_Ctrl_panel3" parent="FlyControl/FC_UI/PID_cUI" unique_id=1465843712 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "偏航调节(4推暂不可用)"
-
 [node name="RovstatePanel" parent="FlyControl/FC_UI" unique_id=809738074 instance=ExtResource("2_xv7uh")]
 layout_mode = 1
 anchor_left = 0.8822917
 anchor_top = 0.07962963
 anchor_bottom = 0.35740742
+
+[node name="HBoxContainer" type="HBoxContainer" parent="FlyControl/FC_UI" unique_id=2129381124]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 387.0
+offset_right = 866.0
+offset_bottom = 1040.0
+
+[node name="PID_cUI" type="VBoxContainer" parent="FlyControl/FC_UI/HBoxContainer" unique_id=792313236]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=2083726178]
+layout_mode = 2
+text = "角速度环"
+horizontal_alignment = 1
+
+[node name="PID_Ctrl_panel" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=1787426440 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "俯仰调节"
+
+[node name="PID_Ctrl_panel2" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=180500268 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "横滚调节"
+
+[node name="PID_Ctrl_panel3" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=1465843712 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "偏航调节(4推暂不可用)"
+
+[node name="PID_cUI2" type="VBoxContainer" parent="FlyControl/FC_UI/HBoxContainer" unique_id=1401138333]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=1092524266]
+layout_mode = 2
+text = "角度环"
+horizontal_alignment = 1
+
+[node name="PID_Ctrl_panel" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=154568542 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "俯仰调节"
+
+[node name="PID_Ctrl_panel2" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=1589925426 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "横滚调节"
+
+[node name="PID_Ctrl_panel3" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=2115286730 instance=ExtResource("1_hds5s")]
+layout_mode = 2
+Title = "偏航调节(4推暂不可用)"
 
 [node name="RovState" type="Node" parent="." unique_id=241275091]
 script = ExtResource("3_n7t2n")

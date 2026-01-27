@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cp14bqwofs3ay"]
 
 [ext_resource type="PackedScene" uid="uid://dn7jt7c0jfe63" path="res://Levels/1_WelcomeScene/loading_scene.tscn" id="1_04nt6"]
-[ext_resource type="Texture2D" uid="uid://djv2pds1qhv45" path="res://Levels/1_WelcomeScene/Imgs/UnderSea.png" id="1_spnio"]
-[ext_resource type="Texture2D" uid="uid://bptxryefefwvg" path="res://Levels/1_WelcomeScene/Imgs/CausticsTexture.png" id="1_xlqca"]
-[ext_resource type="Texture2D" uid="uid://duc832ncvqe7n" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="3_52ruq"]
-[ext_resource type="Texture2D" uid="uid://bu6cul6j2baxa" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="4_kgcvo"]
+[ext_resource type="Texture2D" uid="uid://4bri35o1ukys" path="res://Levels/1_WelcomeScene/Imgs/UnderSea.png" id="1_spnio"]
+[ext_resource type="Texture2D" uid="uid://d0fmyn8semylt" path="res://Levels/1_WelcomeScene/Imgs/CausticsTexture.png" id="1_xlqca"]
+[ext_resource type="Texture2D" uid="uid://uuc6hvmhq6ex" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="3_52ruq"]
+[ext_resource type="Texture2D" uid="uid://8jijjs58khew" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="4_kgcvo"]
 [ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="5_kgcvo"]
 
 [sub_resource type="GDScript" id="GDScript_kgcvo"]
