@@ -63,6 +63,15 @@ func _ready() -> void:
 	D_MinNode.text_changed.connect(_value_changed)
 	D_MaxNode.text_changed.connect(_value_changed)
 	
+func _physics_process(_delta: float) -> void:
+	_updateShow()
+
+func _updateShow():
+	# 更新UI显示, 无论如何数值显示都是控制器实际值
+	if pid_controller:
+		P_value_label.text = \"%.4f\" % pid_controller.P
+		I_value_label.text = \"%.4f\" % pid_controller.I
+		D_value_label.text = \"%.4f\" % pid_controller.D
 	
 func _value_changed(_V):
 	# 更新极值
@@ -101,7 +110,7 @@ custom_minimum_size = Vector2(400, 200)
 offset_left = 720.0
 offset_top = 316.0
 offset_right = 1120.0
-offset_bottom = 516.0
+offset_bottom = 496.0
 size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_lnoqx")
 script = SubResource("GDScript_3oun4")
