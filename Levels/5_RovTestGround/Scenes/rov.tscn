@@ -1,7 +1,6 @@
 [gd_scene format=4 uid="uid://cp27t2rpctkna"]
 
-[ext_resource type="PackedScene" uid="uid://bsad75fktb4bg" path="res://Levels/5_RovTestGround/PID_founctions/pid_ctrl_panel.tscn" id="1_hds5s"]
-[ext_resource type="PackedScene" uid="uid://b0lv00ep44vtv" path="res://Levels/5_RovTestGround/RovState_founctions/rovstate_panel.tscn" id="2_xv7uh"]
+[ext_resource type="Script" uid="uid://hl72hg1iy1di" path="res://addons/graph_2d/graph_2d.gd" id="1_skrrr"]
 [ext_resource type="Script" uid="uid://dokkpfu7d65bt" path="res://Levels/5_RovTestGround/RovState_founctions/Rov_state.gd" id="3_n7t2n"]
 [ext_resource type="Script" uid="uid://bokkhdgh25l7x" path="res://Levels/5_RovTestGround/Sensor_founctions/sensor_IMU.gd" id="4_fax4f"]
 [ext_resource type="Script" uid="uid://c303jftr37ykt" path="res://Levels/5_RovTestGround/Sensor_founctions/sensor_temp.gd" id="5_nf7j6"]
@@ -84,9 +83,11 @@ func _physics_process(delta: float) -> void:
 # =========================================================
 
 ## 浮力（作用在浮心位置）
+# apply_force 作用位置应当是全局坐标
 func apply_buoyancy() -> void:
 	var buoyancy_force:Vector3 = Vector3.UP * water_density * volume * 9.81
-	body.apply_force(buoyancy_force, buoyancy_offset)
+	var buoyancy_world_pos := body.global_transform.origin + body.global_transform.basis * buoyancy_offset
+	body.apply_force(buoyancy_force, buoyancy_world_pos - body.global_transform.origin)
 	_debug_forces.append({
 		\"type\": \"buoyancy\" , # \"thruster\" / \"drag\" / \"buoyancy\"
 		\"pos\": body.global_position + body.global_transform.basis * buoyancy_offset,
@@ -269,113 +270,204 @@ func draw_thick_line(p0: Vector3, p1: Vector3, thickness: float, color: Color) -
 
 [sub_resource type="GDScript" id="GDScript_c6ser"]
 script/source = "extends Node
-# 这是一个控制器模板，将使用PID得到具体的输出数据？
-# PID参数（可以根据实际情况调整）
-# roll：横滚     pitch:俯仰     yaw:偏航
+\"\"\"
+ROV 手动控制节点（8 推进器版本）
 
-@onready var PusherList:Dictionary = {
-	\"L_F\": null, 
-	\"L_B\": null, 
-	\"R_F\":null,
-	\"R_B\":null}
+推进器布局：
+【上层垂直推进器】（负责升沉 / 横滚 / 俯仰）
+- V_LF : 左前
+- V_LB : 左后
+- V_RF : 右前
+- V_RB : 右后
 
+【下层水平推进器】（负责前进 / 偏航 / 横移）
+- H_LF : 左前
+- H_LB : 左后
+- H_RF : 右前
+- H_RB : 右后
 
-@export var LFthruster:Node3D
-@export var LBthruster:Node3D
-@export var RFthruster:Node3D
-@export var RBthruster:Node3D
+使用方式：
+1. 在 Project Settings → Input Map 中配置 Action
+2. 可在 Inspector 中修改 action_map
+3. 支持键盘 / 手柄（摇杆）统一控制
+\"\"\"
+
+# =========================================================
+# 推进器节点引用
+# =========================================================
+@onready var ThrusterList:Dictionary = {
+	\"V_LF\": null, \"V_LB\": null, \"V_RF\": null, \"V_RB\": null,
+	\"H_LF\": null, \"H_LB\": null, \"H_RF\": null, \"H_RB\": null
+}
+
+@export var V_LF_thruster:Node3D
+@export var V_LB_thruster:Node3D
+@export var V_RF_thruster:Node3D
+@export var V_RB_thruster:Node3D
+
+@export var H_LF_thruster:Node3D
+@export var H_LB_thruster:Node3D
+@export var H_RF_thruster:Node3D
+@export var H_RB_thruster:Node3D
+
+# 真实参与物理的刚体
 @export var RovBaseNode:RigidBody3D
 
-const Kp_att := 20.0   # 姿态环增益（你后面要调的）
+# =========================================================
+# 推力与灵敏度参数
+# =========================================================
+const MAX_THRUST:float = 1000.0   # 单推进器最大推力
 
-var pid_pitch:PIDController = PIDController.new(1.0, 0.1, 0.1)
-var pid_roll:PIDController = PIDController.new(1.0, 0.1, 0.1)
-var pid_yaw:PIDController = PIDController.new(0.5, 0.1, 0.1)
+@export var heave_gain  :float = 400.0   # 升沉
+@export var pitch_gain  :float = 300.0   # 俯仰
+@export var roll_gain   :float = 300.0   # 横滚
+@export var yaw_gain    :float = 300.0   # 偏航
+@export var surge_gain  :float = 400.0   # 前进 / 后退
+@export var sway_gain   :float = 300.0   # 横移
 
-# 目标角度(其实可以用目标姿态，一个Vector3)
-var TargetRotation:Vector3 = Vector3(0.1,0.1,0.1)
-var TargetOrientation : Quaternion #四元数目标姿态
+# =========================================================
+# 输入 Action 映射表
+# =========================================================
+@export var action_map:Dictionary = {
+	\"heave_pos\": \"heave_up\",
+	\"heave_neg\": \"heave_down\",
 
-# 推进器速度范围（-100到100）
-const MAX_THRUST:float = 1000
+	\"pitch_pos\": \"pitch_up\",
+	\"pitch_neg\": \"pitch_down\",
 
-func _ready():
-	PusherList[\"L_F\"] = LFthruster
-	PusherList[\"L_B\"] = LBthruster
-	PusherList[\"R_F\"] = RFthruster
-	PusherList[\"R_B\"] = RBthruster
-	TargetOrientation = RovBaseNode.transform.basis.get_rotation_quaternion()
-	print(TargetOrientation)
+	\"roll_pos\":  \"roll_right\",
+	\"roll_neg\":  \"roll_left\",
 
-func BasicHold_Euler(delta: float) -> void:
-	# 当前姿态（欧拉角，单位：rad）
-	var current_roll  := RovBaseNode.rotation.z
-	var current_pitch := RovBaseNode.rotation.x
-	var current_yaw   := RovBaseNode.rotation.y
-	# 目标姿态（欧拉角，rad）//x = pitch  //y = yaw   //z = roll
-	var target_roll  := TargetRotation.z
-	var target_pitch := TargetRotation.x
-	var target_yaw   := TargetRotation.y
-	#姿态误差（外环输入）
-	var roll_error  := target_roll  - current_roll
-	var pitch_error := target_pitch - current_pitch
-	var yaw_error   := wrapf(target_yaw - current_yaw, -PI, PI)
-	# yaw 一定要 wrap，避免 179° → -179° 这种灾难
-	
-	# 外环：姿态 → 目标角速度（只用 P） Kp_att:姿态环增益
-	#   姿态误差不是直接变成推力, 而是：我希望“现在应该转多快”
-	var target_omega:Vector3 = Vector3(
-		pitch_error * Kp_att, # x 轴：pitch
-		yaw_error   * Kp_att, # y 轴：yaw
-		roll_error  * Kp_att  # z 轴：roll
-	)
-	
-	# 读取当前角速度（内环反馈）
-	# Godot 给的是 世界坐标系下的角速度
-	var omega_world := RovBaseNode.angular_velocity
-	# 转到机体系（推进器“感知”的坐标系）
-	var omega_local := RovBaseNode.global_transform.basis.inverse() * omega_world
-	# 现在 PID 干的是“物理正确的事情”：
-	#   控制角速度，而不是控制角度
-	var roll_output := pid_roll.calculate(target_omega.z, omega_local.z, delta)
-	var pitch_output := pid_pitch.calculate(target_omega.x, omega_local.x, delta)
-	var yaw_output := pid_yaw.calculate(target_omega.y, omega_local.y, delta)
-	apply_thrust(roll_output, pitch_output, yaw_output)
-	
-# 将PID输出转化为推进器的推力
-func apply_thrust(roll_output, pitch_output, yaw_output):
-	# 这里假设推进器分布为四个方向，可以根据具体推进器分布方式调整
-	var L_F =  +roll_output - pitch_output - yaw_output
-	var L_B =  +roll_output + pitch_output + yaw_output
-	var R_F =  -roll_output - pitch_output + yaw_output
-	var R_B =  -roll_output + pitch_output - yaw_output
-	set_thruster_power(\"L_F\", L_F)
-	set_thruster_power(\"L_B\", L_B)
-	set_thruster_power(\"R_F\", R_F)
-	set_thruster_power(\"R_B\", R_B)
+	\"yaw_pos\":   \"yaw_right\",
+	\"yaw_neg\":   \"yaw_left\",
 
+	\"surge_pos\": \"move_forward\",
+	\"surge_neg\": \"move_backward\",
 
-# 假设这是推进器控制函数
-func set_thruster_power(thruster_name, power):
-	power = clamp(power, -MAX_THRUST, MAX_THRUST) / MAX_THRUST
-	PusherList[thruster_name].set_commd(power)
+	\"sway_pos\":  \"move_right\",
+	\"sway_neg\":  \"move_left\"
+}
 
-# 主更新函数
+# =========================================================
+# 初始化
+# =========================================================
+func _ready() -> void:
+	ThrusterList[\"V_LF\"] = V_LF_thruster
+	ThrusterList[\"V_LB\"] = V_LB_thruster
+	ThrusterList[\"V_RF\"] = V_RF_thruster
+	ThrusterList[\"V_RB\"] = V_RB_thruster
+
+	ThrusterList[\"H_LF\"] = H_LF_thruster
+	ThrusterList[\"H_LB\"] = H_LB_thruster
+	ThrusterList[\"H_RF\"] = H_RF_thruster
+	ThrusterList[\"H_RB\"] = H_RB_thruster
+
+# =========================================================
+# 主物理循环
+# =========================================================
 func _physics_process(delta: float) -> void:
-	BasicHold_Euler(delta)
+	manual_control(delta)
 
+# =========================================================
+# Action 轴读取工具
+# =========================================================
+func get_axis(pos_key:String, neg_key:String) -> float:
+	\"\"\"
+	将两个 Action 合成为一个逻辑轴
+	返回范围：-1.0 ~ +1.0
+	\"\"\"
+	var pos_action:String = action_map[pos_key]
+	var neg_action:String = action_map[neg_key]
+	return Input.get_action_strength(pos_action) - Input.get_action_strength(neg_action)
 
-func get_RovState():
-	# 这个方法直接获取ROV所有的状态信息
-	var data:Dictionary = {
-		\"degree\": RovBaseNode.rotation_degrees,
-		\"basis\":RovBaseNode.transform.basis.get_rotation_quaternion(),
+# =========================================================
+# 手动控制核心
+# =========================================================
+func manual_control(_delta: float) -> void:
+	# ---- 读取输入轴 ----
+	var heave  :float = get_axis(\"heave_pos\", \"heave_neg\")
+	var pitch  :float = get_axis(\"pitch_pos\", \"pitch_neg\")
+	var roll   :float = get_axis(\"roll_pos\", \"roll_neg\")
+	var yaw    :float = get_axis(\"yaw_pos\", \"yaw_neg\")
+	var surge  :float = get_axis(\"surge_pos\", \"surge_neg\")
+	var sway   :float = get_axis(\"sway_pos\", \"sway_neg\")
+
+	# ---- 输入 → 推力 ----
+	apply_thrust_manual(
+		heave * heave_gain,
+		pitch * pitch_gain,
+		roll  * roll_gain,
+		yaw   * yaw_gain,
+		surge * surge_gain,
+		sway  * sway_gain
+	)
+
+# =========================================================
+# 推进器混控（Mixer）
+# =========================================================
+func apply_thrust_manual(
+	heave:float,
+	pitch:float,
+	roll:float,
+	yaw:float,
+	surge:float,
+	sway:float
+) -> void:
+	\"\"\"
+	八推进器混控逻辑
+
+	上层垂直推进器：
+	- heave → 全部同向
+	- pitch → 前后差动
+	- roll  → 左右差动
+
+	下层水平推进器：
+	- surge → 前后差动
+	- yaw   → 左右差动
+	- sway  → 横移
+	\"\"\"
+
+	# -------- 上层垂直推进器 --------
+	var V_LF:float = heave - pitch + roll
+	var V_LB:float = heave + pitch + roll
+	var V_RF:float = heave - pitch - roll
+	var V_RB:float = heave + pitch - roll
+
+	# -------- 下层水平推进器 --------
+	var H_LF:float = surge + yaw
+	var H_LB:float = surge + yaw
+	var H_RF:float = surge - yaw
+	var H_RB:float = surge - yaw
+
+	# 设置推进器输出
+	set_thruster_power(\"V_LF\", V_LF)
+	set_thruster_power(\"V_LB\", V_LB)
+	set_thruster_power(\"V_RF\", V_RF)
+	set_thruster_power(\"V_RB\", V_RB)
+	set_thruster_power(\"H_LF\", H_LF)
+	set_thruster_power(\"H_LB\", H_LB)
+	set_thruster_power(\"H_RF\", H_RF)
+	set_thruster_power(\"H_RB\", H_RB)
+
+# =========================================================
+# 推进器输出
+# =========================================================
+func set_thruster_power(name:String, power:float) -> void:
+	power = clamp(power, -MAX_THRUST, MAX_THRUST) / MAX_THRUST
+	ThrusterList[name].set_commd(power)
+
+# =========================================================
+# 状态接口
+# =========================================================
+func get_RovState() -> Dictionary:
+	return {
+		\"rotation\": RovBaseNode.rotation_degrees,
+		\"basis\": RovBaseNode.transform.basis.get_rotation_quaternion(),
 		\"global_basis\": RovBaseNode.global_transform.basis.get_rotation_quaternion(),
-		\"deepth\": RovBaseNode.global_position.y,
-		\"Current_state\": \"PID\",
-		\"Velocity\": RovBaseNode.linear_velocity
+		\"depth\": RovBaseNode.global_position.y,
+		\"state\": \"MANUAL\",
+		\"velocity\": RovBaseNode.linear_velocity
 	}
-	return	data
 "
 
 [sub_resource type="GDScript" id="GDScript_cig8n"]
@@ -394,27 +486,77 @@ script/source = "extends Control
 
 func _ready() -> void:
 	# 将PID控件绑定到相应的PID控制器
-	pitch_ctrl_node.pid_controller = FCnode.pid_pitch
-	roll_ctrl_node.pid_controller = FCnode.pid_roll
-	yaw_ctrl_node.pid_controller = FCnode.pid_yaw
+	#pitch_ctrl_node.pid_controller = FCnode.pid_pitch
+	#roll_ctrl_node.pid_controller = FCnode.pid_roll
+	#yaw_ctrl_node.pid_controller = FCnode.pid_yaw
 	
 	# 将rovstate节点绑定到相应UI
 	StateNode.rov_state = rov_state
 "
 
-[sub_resource type="GDScript" id="GDScript_q1wnw"]
-script/source = "extends HSlider
-# 推进器简易控制器
-@export var pusher:Node3D 
-@export var enable:bool = false
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3oun4"]
+bg_color = Color(6.497651e-07, 0.21450546, 0.34496844, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+shadow_color = Color(0.015003967, 2.4065375e-08, 0.3678201, 0.5529412)
+shadow_size = 5
+
+[sub_resource type="GDScript" id="GDScript_hamj1"]
+script/source = "extends Panel
+
+# 从指定的ROVstate节点读取数据并显示
+@export var rov_state:ROVState
+
+# UI节点引用
+@export var Ola_x:Label
+@export var Ola_y:Label
+@export var Ola_z:Label
+
+@export var Rov_Basis_a:Label
+@export var Rov_Basis_b:Label
+@export var Rov_Basis_c:Label
+@export var Rov_Basis_d:Label
+
+@export var deepthLabel:Label
+@export var graph:Graph2D
+
+@export var TemperatureLabel:Label
+#@export var deepthLabel:Label
+
+@onready var deep_plot:PlotItem = graph.add_plot_item(\"DEEP\", Color.GREEN, 1.0)
+@onready var Temp_plot:PlotItem = graph.add_plot_item(\"TEMP\", Color.RED, 1.0)
+
+func _ready() -> void:
+	rov_state = $\"../../../RovState\"
+	pass
+
+func _updateZitaiData():
+	# 显示姿态数据
+	Ola_x.text = \"pitch: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).x
+	Ola_y.text = \"yaw: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).y
+	Ola_z.text = \"roll: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).z
+	
+	Rov_Basis_a.text = \"w: %.2f\" % rov_state.imu_orientation.w
+	Rov_Basis_b.text = \"x: %.2f\" % rov_state.imu_orientation.x
+	Rov_Basis_c.text = \"y: %.2f\" % rov_state.imu_orientation.y
+	Rov_Basis_d.text = \"z: %.2f\" % rov_state.imu_orientation.z
+	
+	deepthLabel.text = \"  %.2f m\" % (rov_state.depth/10.0)
+	graph.x_max = Time.get_ticks_msec()/100.0
+	graph.x_min = graph.x_max - 100.0
+	deep_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.depth))
+	
+	TemperatureLabel.text = \"  %.2f ℃\" % rov_state.water_temperature
+	Temp_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.water_temperature))
 
 func _physics_process(_delta: float) -> void:
-	if enable:
-		pusher.set_commd(value)
+	_updateZitaiData()
 "
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_lnoqx"]
-size = Vector3(5.8189697, 2.0673828, 7.1728516)
+size = Vector3(6.5043488, 4.7941284, 7.1728516)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_57kqt"]
 resource_name = "Material"
@@ -650,146 +792,15 @@ mass = 10.0
 
 [node name="Hydrodynamics" type="Node" parent="." unique_id=217397381 node_paths=PackedStringArray("body")]
 script = SubResource("GDScript_lnoqx")
-buoyancy_offset = Vector3(0, 1, 0)
+buoyancy_offset = Vector3(0, 0.2, 0)
 body = NodePath("..")
 
 [node name="FoeceDebugDraw" type="Node3D" parent="Hydrodynamics" unique_id=1599291476]
 script = SubResource("GDScript_pt4hb")
 
-[node name="FlyControl" type="Node" parent="." unique_id=1388040420 node_paths=PackedStringArray("LFthruster", "LBthruster", "RFthruster", "RBthruster", "RovBaseNode")]
-script = SubResource("GDScript_c6ser")
-LFthruster = NodePath("../Thrusters/LF")
-LBthruster = NodePath("../Thrusters/LB")
-RFthruster = NodePath("../Thrusters/RF")
-RBthruster = NodePath("../Thrusters/RB")
-RovBaseNode = NodePath("..")
-
-[node name="FC_UI" type="Control" parent="FlyControl" unique_id=1800555098 node_paths=PackedStringArray("FCnode", "rov_state", "pitch_ctrl_node", "roll_ctrl_node", "yaw_ctrl_node", "StateNode")]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = SubResource("GDScript_cig8n")
-FCnode = NodePath("..")
-rov_state = NodePath("../../RovState")
-pitch_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel")
-roll_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel2")
-yaw_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel3")
-StateNode = NodePath("RovstatePanel")
-
-[node name="Rov_Ctrl_UI" type="VBoxContainer" parent="FlyControl/FC_UI" unique_id=1434957430]
-visible = false
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.95104164
-anchor_top = 0.9425926
-anchor_right = 0.95104164
-anchor_bottom = 0.9425926
-offset_left = -361.0
-offset_top = -396.0
-grow_horizontal = 0
-grow_vertical = 0
-mouse_filter = 2
-metadata/_edit_use_anchors_ = true
-
-[node name="HSlider" type="HSlider" parent="FlyControl/FC_UI/Rov_Ctrl_UI" unique_id=1807408433 node_paths=PackedStringArray("pusher")]
-layout_mode = 2
-size_flags_vertical = 3
-min_value = -1.0
-max_value = 1.0
-step = 0.01
-script = SubResource("GDScript_q1wnw")
-pusher = NodePath("../../../../Thrusters/RF")
-
-[node name="HSlider2" type="HSlider" parent="FlyControl/FC_UI/Rov_Ctrl_UI" unique_id=1699331550 node_paths=PackedStringArray("pusher")]
-layout_mode = 2
-size_flags_vertical = 3
-min_value = -1.0
-max_value = 1.0
-step = 0.01
-script = SubResource("GDScript_q1wnw")
-pusher = NodePath("../../../../Thrusters/LF")
-
-[node name="HSlider3" type="HSlider" parent="FlyControl/FC_UI/Rov_Ctrl_UI" unique_id=767137429 node_paths=PackedStringArray("pusher")]
-layout_mode = 2
-size_flags_vertical = 3
-min_value = -1.0
-max_value = 1.0
-step = 0.01
-script = SubResource("GDScript_q1wnw")
-pusher = NodePath("../../../../Thrusters/LB")
-
-[node name="HSlider4" type="HSlider" parent="FlyControl/FC_UI/Rov_Ctrl_UI" unique_id=252031347 node_paths=PackedStringArray("pusher")]
-layout_mode = 2
-size_flags_vertical = 3
-min_value = -1.0
-max_value = 1.0
-step = 0.01
-script = SubResource("GDScript_q1wnw")
-pusher = NodePath("../../../../Thrusters/RB")
-
-[node name="RovstatePanel" parent="FlyControl/FC_UI" unique_id=809738074 instance=ExtResource("2_xv7uh")]
-layout_mode = 1
-anchor_left = 0.8822917
-anchor_top = 0.07962963
-anchor_bottom = 0.35740742
-
-[node name="HBoxContainer" type="HBoxContainer" parent="FlyControl/FC_UI" unique_id=2129381124]
-layout_mode = 0
-offset_left = 62.0
-offset_top = 387.0
-offset_right = 866.0
-offset_bottom = 1040.0
-
-[node name="PID_cUI" type="VBoxContainer" parent="FlyControl/FC_UI/HBoxContainer" unique_id=792313236]
-layout_mode = 2
-theme_override_constants/separation = 10
-metadata/_edit_use_anchors_ = true
-
-[node name="Label" type="Label" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=2083726178]
-layout_mode = 2
-text = "角速度环"
-horizontal_alignment = 1
-
-[node name="PID_Ctrl_panel" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=1787426440 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "俯仰调节"
-
-[node name="PID_Ctrl_panel2" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=180500268 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "横滚调节"
-
-[node name="PID_Ctrl_panel3" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI" unique_id=1465843712 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "偏航调节(4推暂不可用)"
-
-[node name="PID_cUI2" type="VBoxContainer" parent="FlyControl/FC_UI/HBoxContainer" unique_id=1401138333]
-layout_mode = 2
-theme_override_constants/separation = 10
-metadata/_edit_use_anchors_ = true
-
-[node name="Label" type="Label" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=1092524266]
-layout_mode = 2
-text = "角度环"
-horizontal_alignment = 1
-
-[node name="PID_Ctrl_panel" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=154568542 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "俯仰调节"
-
-[node name="PID_Ctrl_panel2" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=1589925426 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "横滚调节"
-
-[node name="PID_Ctrl_panel3" parent="FlyControl/FC_UI/HBoxContainer/PID_cUI2" unique_id=2115286730 instance=ExtResource("1_hds5s")]
-layout_mode = 2
-Title = "偏航调节(4推暂不可用)"
-
-[node name="RovState" type="Node" parent="." unique_id=241275091]
+[node name="RovState" type="Node" parent="." unique_id=241275091 node_paths=PackedStringArray("body")]
 script = ExtResource("3_n7t2n")
+body = NodePath("..")
 
 [node name="Sensors" type="Node" parent="." unique_id=1784880809]
 
@@ -807,7 +818,143 @@ script = ExtResource("6_l1188")
 body = NodePath("../..")
 state = NodePath("../../RovState")
 
+[node name="FlyControl_manul_8p_hammer" type="Node" parent="." unique_id=1649414776]
+script = SubResource("GDScript_c6ser")
+
+[node name="FC_UI" type="Control" parent="FlyControl_manul_8p_hammer" unique_id=386926196 node_paths=PackedStringArray("FCnode", "StateNode")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = SubResource("GDScript_cig8n")
+FCnode = NodePath("..")
+StateNode = NodePath("RovstatePanel")
+
+[node name="RovstatePanel" type="Panel" parent="FlyControl_manul_8p_hammer/FC_UI" unique_id=419331236 node_paths=PackedStringArray("Ola_x", "Ola_y", "Ola_z", "Rov_Basis_a", "Rov_Basis_b", "Rov_Basis_c", "Rov_Basis_d", "deepthLabel", "graph", "TemperatureLabel")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.8822917
+anchor_top = 0.07962963
+anchor_right = 0.9734375
+anchor_bottom = 0.35740742
+offset_left = -299.0
+offset_bottom = 340.0
+grow_horizontal = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_3oun4")
+script = SubResource("GDScript_hamj1")
+Ola_x = NodePath("MarginContainer/DataShow/HBoxContainer/Label2")
+Ola_y = NodePath("MarginContainer/DataShow/HBoxContainer/Label3")
+Ola_z = NodePath("MarginContainer/DataShow/HBoxContainer/Label4")
+Rov_Basis_a = NodePath("MarginContainer/DataShow/HBoxContainer2/Label2")
+Rov_Basis_b = NodePath("MarginContainer/DataShow/HBoxContainer2/Label3")
+Rov_Basis_c = NodePath("MarginContainer/DataShow/HBoxContainer2/Label4")
+Rov_Basis_d = NodePath("MarginContainer/DataShow/HBoxContainer2/Label5")
+deepthLabel = NodePath("MarginContainer/DataShow/HBoxContainer3/Label2")
+graph = NodePath("MarginContainer/DataShow/Graph2D")
+TemperatureLabel = NodePath("MarginContainer/DataShow/HBoxContainer4/Label2")
+metadata/_edit_use_anchors_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel" unique_id=1408844422]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="DataShow" type="VBoxContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer" unique_id=170100183]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=463633549]
+layout_mode = 2
+text = "当前姿态--欧拉:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=455092143]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=1172576526]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label3" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=686511669]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label4" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=50902681]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="Label2" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=251570799]
+layout_mode = 2
+text = "当前姿态--四元数:"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=36092375]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=921871200]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "W"
+
+[node name="Label3" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=1607658898]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label4" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=1065634972]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label5" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=461382367]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=1533009800]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer3" unique_id=1806251066]
+layout_mode = 2
+text = "深度传感器读数:"
+
+[node name="Label2" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer3" unique_id=1197705482]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=821890545]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer4" unique_id=984854642]
+layout_mode = 2
+text = "温度传感器读数:"
+
+[node name="Label2" type="Label" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer4" unique_id=1758585419]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Graph2D" type="Control" parent="FlyControl_manul_8p_hammer/FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=825601137]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_skrrr")
+y_max = 30.0
+metadata/_custom_type_script = "uid://hl72hg1iy1di"
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=956526637]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.17409515, 0.73172, 0)
 shape = SubResource("BoxShape3D_lnoqx")
 
 [node name="Thrusters" type="Node3D" parent="." unique_id=29687638]

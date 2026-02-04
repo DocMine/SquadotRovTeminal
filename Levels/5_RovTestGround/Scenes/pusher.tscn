@@ -391,6 +391,7 @@ transform = Transform3D(-0.101492256, 0, 0.17578971, 0, 0.28004903, 0, -0.175789
 mesh = SubResource("ArrayMesh_b0cb7")
 
 [node name="ThresherUI" type="Control" parent="." unique_id=1277990786 node_paths=PackedStringArray("ThrusterNode", "Namelabel", "Valuelabel", "ProgressN", "ProgressP")]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0

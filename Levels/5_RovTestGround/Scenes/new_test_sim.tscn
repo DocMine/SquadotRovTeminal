@@ -40,13 +40,13 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545
 shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1620242321]
-transform = Transform3D(-0.9992153, -0.016177151, 0.036154322, 0, 0.91279143, 0.40842605, -0.039608523, 0.40810552, -0.91207516, -0.18838668, -10.536898, -11.580711)
+transform = Transform3D(-0.9992153, -0.016177151, 0.036154322, 0, 0.91279143, 0.40842602, -0.039608523, 0.40810552, -0.91207516, 0, -10.309795, -43.774975)
 
 [node name="ROV" parent="." unique_id=1308941039 instance=ExtResource("1_yhthb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -14.950427, 0)
 
 [node name="RigidBody3D" type="RigidBody3D" parent="." unique_id=242103332]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.6254296, 0.94925976)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.6254296, 51.457737)
 mass = 5.0
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="RigidBody3D" unique_id=1715381500]

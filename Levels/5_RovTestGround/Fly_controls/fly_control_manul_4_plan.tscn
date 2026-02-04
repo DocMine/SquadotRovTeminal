@@ -1,0 +1,435 @@
+[gd_scene format=3 uid="uid://cc54to4lflrs3"]
+
+[ext_resource type="Script" uid="uid://hl72hg1iy1di" path="res://addons/graph_2d/graph_2d.gd" id="1_4mbml"]
+
+[sub_resource type="GDScript" id="GDScript_c6ser"]
+script/source = "extends Node
+\"\"\"
+ROV 手动控制节点（6 推进器版本）
+
+推进器布局：
+【垂直推进器】
+- V_LF : 左前垂直
+- V_RF : 右前垂直
+- V_MB : 中后垂直
+
+【水平推进器】
+- H_LM : 左中（前进 / 偏航）
+- H_RM : 右中（前进 / 偏航）
+- H_C  : 中置（横移）
+
+使用方式：
+1. 在 Project Settings → Input Map 中配置 Action
+2. 可在 Inspector 中修改 action_map
+3. 支持键盘 / 手柄（摇杆）统一控制
+\"\"\"
+
+# =========================================================
+# 推进器节点引用
+# =========================================================
+
+@onready var ThrusterList:Dictionary = {
+	\"V_LF\": null,   # 左前垂直
+	\"V_RF\": null,   # 右前垂直
+	\"V_MB\": null,   # 中后垂直
+	\"H_LM\": null,   # 左中水平
+	\"H_RM\": null,   # 右中水平
+	\"H_C\":  null    # 中置横移
+}
+
+@export var V_LF_thruster:Node3D
+@export var V_RF_thruster:Node3D
+@export var V_MB_thruster:Node3D
+@export var H_LM_thruster:Node3D
+@export var H_RM_thruster:Node3D
+@export var H_C_thruster:Node3D
+
+# 真实参与物理的刚体
+@export var RovBaseNode:RigidBody3D
+
+
+# =========================================================
+# 推力与灵敏度参数
+# =========================================================
+
+const MAX_THRUST:float = 1000.0   # 单推进器最大推力
+
+@export var heave_gain   :float = 400.0   # 升沉
+@export var pitch_gain   :float = 300.0   # 俯仰
+@export var roll_gain    :float = 300.0   # 横滚
+@export var yaw_gain     :float = 300.0   # 偏航
+@export var surge_gain   :float = 400.0   # 前进 / 后退
+@export var sway_gain    :float = 300.0   # 横移
+
+
+# =========================================================
+# 输入 Action 映射表
+# =========================================================
+
+@export var action_map:Dictionary = {
+	\"heave_pos\":   \"heave_up\",
+	\"heave_neg\":   \"heave_down\",
+
+	\"pitch_pos\":   \"pitch_up\",
+	\"pitch_neg\":   \"pitch_down\",
+
+	\"roll_pos\":    \"roll_right\",
+	\"roll_neg\":    \"roll_left\",
+
+	\"yaw_pos\":     \"yaw_right\",
+	\"yaw_neg\":     \"yaw_left\",
+
+	\"surge_pos\":   \"move_forward\",
+	\"surge_neg\":   \"move_backward\",
+
+	\"sway_pos\":    \"move_right\",
+	\"sway_neg\":    \"move_left\"
+}
+
+
+# =========================================================
+# 初始化
+# =========================================================
+
+func _ready() -> void:
+	ThrusterList[\"V_LF\"] = V_LF_thruster
+	ThrusterList[\"V_RF\"] = V_RF_thruster
+	ThrusterList[\"V_MB\"] = V_MB_thruster
+	ThrusterList[\"H_LM\"] = H_LM_thruster
+	ThrusterList[\"H_RM\"] = H_RM_thruster
+	ThrusterList[\"H_C\"]  = H_C_thruster
+
+
+# =========================================================
+# 主物理循环
+# =========================================================
+
+func _physics_process(delta: float) -> void:
+	manual_control(delta)
+
+
+# =========================================================
+# Action 轴读取工具
+# =========================================================
+
+func get_axis(pos_key:String, neg_key:String) -> float:
+	\"\"\"
+	将两个 Action 合成为一个逻辑轴
+	返回范围：-1.0 ~ +1.0
+	\"\"\"
+	var pos_action:String = action_map[pos_key]
+	var neg_action:String = action_map[neg_key]
+	return Input.get_action_strength(pos_action) - Input.get_action_strength(neg_action)
+
+
+# =========================================================
+# 手动控制核心
+# =========================================================
+
+func manual_control(_delta: float) -> void:
+	# ---- 读取输入轴 ----
+	var heave  :float = get_axis(\"heave_pos\",  \"heave_neg\")
+	var pitch  :float = get_axis(\"pitch_pos\",  \"pitch_neg\")
+	var roll   :float = get_axis(\"roll_pos\",   \"roll_neg\")
+	var yaw    :float = get_axis(\"yaw_pos\",    \"yaw_neg\")
+	var surge  :float = get_axis(\"surge_pos\",  \"surge_neg\")
+	var sway   :float = get_axis(\"sway_pos\",   \"sway_neg\")
+
+	# ---- 输入 → 推力 ----
+	apply_thrust_manual(
+		heave  * heave_gain,
+		pitch  * pitch_gain,
+		roll   * roll_gain,
+		yaw    * yaw_gain,
+		surge  * surge_gain,
+		sway   * sway_gain
+	)
+
+
+# =========================================================
+# 推进器混控（Mixer）
+# =========================================================
+
+func apply_thrust_manual(
+	heave:float,
+	pitch:float,
+	roll:float,
+	yaw:float,
+	surge:float,
+	sway:float
+) -> void:
+	\"\"\"
+	六推进器混控逻辑
+
+	垂直推进器：
+	- heave → 所有垂直推进器同向
+	- pitch → 前后差动
+	- roll  → 左右差动
+
+	水平推进器：
+	- surge → 左右主推进器同向
+	- yaw   → 左右主推进器反向
+	- sway  → 中置横移推进器
+	\"\"\"
+
+	# -------- 垂直推进器 --------
+	var V_LF:float = heave - pitch + roll
+	var V_RF:float = heave - pitch - roll
+	var V_MB:float = heave + pitch
+
+	# -------- 水平推进器 --------
+	var H_LM:float = surge + yaw
+	var H_RM:float = surge - yaw
+	var H_C :float = sway
+
+	set_thruster_power(\"V_LF\", V_LF)
+	set_thruster_power(\"V_RF\", V_RF)
+	set_thruster_power(\"V_MB\", V_MB)
+	set_thruster_power(\"H_LM\", H_LM)
+	set_thruster_power(\"H_RM\", H_RM)
+	set_thruster_power(\"H_C\",  H_C)
+
+
+# =========================================================
+# 推进器输出
+# =========================================================
+
+func set_thruster_power(name:String, power:float) -> void:
+	power = clamp(power, -MAX_THRUST, MAX_THRUST) / MAX_THRUST
+	ThrusterList[name].set_commd(power)
+
+
+# =========================================================
+# 状态接口
+# =========================================================
+
+func get_RovState() -> Dictionary:
+	return {
+		\"rotation\": RovBaseNode.rotation_degrees,
+		\"basis\": RovBaseNode.transform.basis.get_rotation_quaternion(),
+		\"global_basis\": RovBaseNode.global_transform.basis.get_rotation_quaternion(),
+		\"depth\": RovBaseNode.global_position.y,
+		\"state\": \"MANUAL\",
+		\"velocity\": RovBaseNode.linear_velocity
+	}
+"
+
+[sub_resource type="GDScript" id="GDScript_cig8n"]
+script/source = "extends Control
+# 飞控相关的UI集合，显示基础的姿态和PID调节
+
+@export_group(\"UI nods\")
+@export var FCnode:Node
+@export var rov_state:ROVState
+
+@export var pitch_ctrl_node:Control
+@export var roll_ctrl_node:Control
+@export var yaw_ctrl_node:Control
+
+@export var StateNode:Control
+
+func _ready() -> void:
+	# 将PID控件绑定到相应的PID控制器
+	#pitch_ctrl_node.pid_controller = FCnode.pid_pitch
+	#roll_ctrl_node.pid_controller = FCnode.pid_roll
+	#yaw_ctrl_node.pid_controller = FCnode.pid_yaw
+	
+	# 将rovstate节点绑定到相应UI
+	StateNode.rov_state = rov_state
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3oun4"]
+bg_color = Color(6.497651e-07, 0.21450546, 0.34496844, 1)
+corner_radius_top_left = 25
+corner_radius_top_right = 25
+corner_radius_bottom_right = 25
+corner_radius_bottom_left = 25
+shadow_color = Color(0.015003967, 2.4065375e-08, 0.3678201, 0.5529412)
+shadow_size = 5
+
+[sub_resource type="GDScript" id="GDScript_hamj1"]
+script/source = "extends Panel
+
+# 从指定的ROVstate节点读取数据并显示
+@export var rov_state:ROVState
+
+# UI节点引用
+@export var Ola_x:Label
+@export var Ola_y:Label
+@export var Ola_z:Label
+
+@export var Rov_Basis_a:Label
+@export var Rov_Basis_b:Label
+@export var Rov_Basis_c:Label
+@export var Rov_Basis_d:Label
+
+@export var deepthLabel:Label
+@export var graph:Graph2D
+
+@export var TemperatureLabel:Label
+#@export var deepthLabel:Label
+
+@onready var deep_plot:PlotItem = graph.add_plot_item(\"DEEP\", Color.GREEN, 1.0)
+@onready var Temp_plot:PlotItem = graph.add_plot_item(\"TEMP\", Color.RED, 1.0)
+
+func _ready() -> void:
+	rov_state = $\"../../../RovState\"
+	pass
+
+func _updateZitaiData():
+	# 显示姿态数据
+	Ola_x.text = \"pitch: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).x
+	Ola_y.text = \"yaw: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).y
+	Ola_z.text = \"roll: %.2f\" % rov_state.imu_orientation.get_euler(EULER_ORDER_XYZ).z
+	
+	Rov_Basis_a.text = \"w: %.2f\" % rov_state.imu_orientation.w
+	Rov_Basis_b.text = \"x: %.2f\" % rov_state.imu_orientation.x
+	Rov_Basis_c.text = \"y: %.2f\" % rov_state.imu_orientation.y
+	Rov_Basis_d.text = \"z: %.2f\" % rov_state.imu_orientation.z
+	
+	deepthLabel.text = \"  %.2f m\" % (rov_state.depth/10.0)
+	graph.x_max = Time.get_ticks_msec()/100.0
+	graph.x_min = graph.x_max - 100.0
+	deep_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.depth))
+	
+	TemperatureLabel.text = \"  %.2f ℃\" % rov_state.water_temperature
+	Temp_plot.add_point(Vector2(Time.get_ticks_msec()/100.0, rov_state.water_temperature))
+
+func _physics_process(_delta: float) -> void:
+	_updateZitaiData()
+"
+
+[node name="FlyControl_manul_4plan" type="Node" unique_id=671206654]
+script = SubResource("GDScript_c6ser")
+
+[node name="FC_UI" type="Control" parent="." unique_id=1714356795 node_paths=PackedStringArray("FCnode", "StateNode")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = SubResource("GDScript_cig8n")
+FCnode = NodePath("..")
+StateNode = NodePath("RovstatePanel")
+
+[node name="RovstatePanel" type="Panel" parent="FC_UI" unique_id=853174697 node_paths=PackedStringArray("Ola_x", "Ola_y", "Ola_z", "Rov_Basis_a", "Rov_Basis_b", "Rov_Basis_c", "Rov_Basis_d", "deepthLabel", "graph", "TemperatureLabel")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.8822917
+anchor_top = 0.07962963
+anchor_right = 0.9734375
+anchor_bottom = 0.35740742
+offset_left = -299.0
+offset_bottom = 340.0
+grow_horizontal = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_3oun4")
+script = SubResource("GDScript_hamj1")
+Ola_x = NodePath("MarginContainer/DataShow/HBoxContainer/Label2")
+Ola_y = NodePath("MarginContainer/DataShow/HBoxContainer/Label3")
+Ola_z = NodePath("MarginContainer/DataShow/HBoxContainer/Label4")
+Rov_Basis_a = NodePath("MarginContainer/DataShow/HBoxContainer2/Label2")
+Rov_Basis_b = NodePath("MarginContainer/DataShow/HBoxContainer2/Label3")
+Rov_Basis_c = NodePath("MarginContainer/DataShow/HBoxContainer2/Label4")
+Rov_Basis_d = NodePath("MarginContainer/DataShow/HBoxContainer2/Label5")
+deepthLabel = NodePath("MarginContainer/DataShow/HBoxContainer3/Label2")
+graph = NodePath("MarginContainer/DataShow/Graph2D")
+TemperatureLabel = NodePath("MarginContainer/DataShow/HBoxContainer4/Label2")
+metadata/_edit_use_anchors_ = true
+
+[node name="MarginContainer" type="MarginContainer" parent="FC_UI/RovstatePanel" unique_id=558705664]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="DataShow" type="VBoxContainer" parent="FC_UI/RovstatePanel/MarginContainer" unique_id=1003036462]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Label" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=300154266]
+layout_mode = 2
+text = "当前姿态--欧拉:"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=1911919806]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=1800043207]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label3" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=2090327389]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label4" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer" unique_id=1791834002]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="Label2" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=117965069]
+layout_mode = 2
+text = "当前姿态--四元数:"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=1462659622]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=719424185]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "W"
+
+[node name="Label3" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=490499604]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "X"
+
+[node name="Label4" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=1619661988]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Y"
+
+[node name="Label5" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer2" unique_id=691562712]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Z"
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=1367938447]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer3" unique_id=532671907]
+layout_mode = 2
+text = "深度传感器读数:"
+
+[node name="Label2" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer3" unique_id=548739527]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer4" type="HBoxContainer" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=1170298959]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer4" unique_id=179608327]
+layout_mode = 2
+text = "温度传感器读数:"
+
+[node name="Label2" type="Label" parent="FC_UI/RovstatePanel/MarginContainer/DataShow/HBoxContainer4" unique_id=87478241]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Graph2D" type="Control" parent="FC_UI/RovstatePanel/MarginContainer/DataShow" unique_id=878956816]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("1_4mbml")
+y_max = 30.0
+metadata/_custom_type_script = "uid://hl72hg1iy1di"

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c1m7dd1kyk6b"]
 
-[ext_resource type="PackedScene" uid="uid://bg61maepl7gnm" path="res://Global_assets/ExtractModels/Rov4Push_Basic.tscn" id="1_exykd"]
+[ext_resource type="PackedScene" uid="uid://bg61maepl7gnm" path="res://Global_assets/RovModels/Rov4Push_Basic.tscn" id="1_exykd"]
 [ext_resource type="Texture2D" uid="uid://bk87uuf6m4kb8" path="res://Levels/2_RovSelectScene/pool_2k.hdr" id="1_tjowo"]
 [ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="3_a4wml"]
 [ext_resource type="FontFile" uid="uid://dc8dje8thcodp" path="res://Levels/1_WelcomeScene/UITheme/庞门正道标题体.TTF" id="4_a6t5g"]

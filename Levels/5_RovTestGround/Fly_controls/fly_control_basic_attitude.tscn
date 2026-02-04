@@ -1,0 +1,282 @@
+[gd_scene format=3 uid="uid://cspa38ijlnipq"]
+
+[ext_resource type="PackedScene" uid="uid://b0lv00ep44vtv" path="res://Levels/5_RovTestGround/RovState_founctions/rovstate_panel.tscn" id="1_e5wq4"]
+[ext_resource type="PackedScene" uid="uid://bsad75fktb4bg" path="res://Levels/5_RovTestGround/PID_founctions/pid_ctrl_panel.tscn" id="2_16ops"]
+
+[sub_resource type="GDScript" id="GDScript_c6ser"]
+script/source = "extends Node
+# 这是一个控制器模板，将使用PID得到具体的输出数据？
+# PID参数（可以根据实际情况调整）
+# roll：横滚     pitch:俯仰     yaw:偏航
+
+@onready var PusherList:Dictionary = {
+	\"L_F\": null, 
+	\"L_B\": null, 
+	\"R_F\":null,
+	\"R_B\":null}
+
+
+@export var LFthruster:Node3D
+@export var LBthruster:Node3D
+@export var RFthruster:Node3D
+@export var RBthruster:Node3D
+@export var RovBaseNode:RigidBody3D
+
+const Kp_att := 20.0   # 姿态环增益（你后面要调的）
+
+var pid_pitch:PIDController = PIDController.new(1.0, 0.1, 0.1)
+var pid_roll:PIDController = PIDController.new(1.0, 0.1, 0.1)
+var pid_yaw:PIDController = PIDController.new(0.5, 0.1, 0.1)
+
+# 目标角度(其实可以用目标姿态，一个Vector3)
+var TargetRotation:Vector3 = Vector3(0.1,0.1,0.1)
+var TargetOrientation : Quaternion #四元数目标姿态
+
+# 推进器速度范围（-100到100）
+const MAX_THRUST:float = 1000
+
+func _ready():
+	PusherList[\"L_F\"] = LFthruster
+	PusherList[\"L_B\"] = LBthruster
+	PusherList[\"R_F\"] = RFthruster
+	PusherList[\"R_B\"] = RBthruster
+	TargetOrientation = RovBaseNode.transform.basis.get_rotation_quaternion()
+	print(TargetOrientation)
+
+func BasicHold_Euler(delta: float) -> void:
+	# 当前姿态（欧拉角，单位：rad）
+	var current_roll  := RovBaseNode.rotation.z
+	var current_pitch := RovBaseNode.rotation.x
+	var current_yaw   := RovBaseNode.rotation.y
+	# 目标姿态（欧拉角，rad）//x = pitch  //y = yaw   //z = roll
+	var target_roll  := TargetRotation.z
+	var target_pitch := TargetRotation.x
+	var target_yaw   := TargetRotation.y
+	#姿态误差（外环输入）
+	var roll_error  := target_roll  - current_roll
+	var pitch_error := target_pitch - current_pitch
+	var yaw_error   := wrapf(target_yaw - current_yaw, -PI, PI)
+	# yaw 一定要 wrap，避免 179° → -179° 这种灾难
+	
+	# 外环：姿态 → 目标角速度（只用 P） Kp_att:姿态环增益
+	#   姿态误差不是直接变成推力, 而是：我希望“现在应该转多快”
+	var target_omega:Vector3 = Vector3(
+		pitch_error * Kp_att, # x 轴：pitch
+		yaw_error   * Kp_att, # y 轴：yaw
+		roll_error  * Kp_att  # z 轴：roll
+	)
+	
+	# 读取当前角速度（内环反馈）
+	# Godot 给的是 世界坐标系下的角速度
+	var omega_world := RovBaseNode.angular_velocity
+	# 转到机体系（推进器“感知”的坐标系）
+	var omega_local := RovBaseNode.global_transform.basis.inverse() * omega_world
+	# 现在 PID 干的是“物理正确的事情”：
+	#   控制角速度，而不是控制角度
+	var roll_output := pid_roll.calculate(target_omega.z, omega_local.z, delta)
+	var pitch_output := pid_pitch.calculate(target_omega.x, omega_local.x, delta)
+	var yaw_output := pid_yaw.calculate(target_omega.y, omega_local.y, delta)
+	apply_thrust(roll_output, pitch_output, yaw_output)
+	
+# 将PID输出转化为推进器的推力
+func apply_thrust(roll_output, pitch_output, yaw_output):
+	# 这里假设推进器分布为四个方向，可以根据具体推进器分布方式调整
+	var L_F =  +roll_output - pitch_output - yaw_output
+	var L_B =  +roll_output + pitch_output + yaw_output
+	var R_F =  -roll_output - pitch_output + yaw_output
+	var R_B =  -roll_output + pitch_output - yaw_output
+	set_thruster_power(\"L_F\", L_F)
+	set_thruster_power(\"L_B\", L_B)
+	set_thruster_power(\"R_F\", R_F)
+	set_thruster_power(\"R_B\", R_B)
+
+
+# 假设这是推进器控制函数
+func set_thruster_power(thruster_name, power):
+	power = clamp(power, -MAX_THRUST, MAX_THRUST) / MAX_THRUST
+	PusherList[thruster_name].set_commd(power)
+
+# 主更新函数
+func _physics_process(delta: float) -> void:
+	BasicHold_Euler(delta)
+
+
+func get_RovState():
+	# 这个方法直接获取ROV所有的状态信息
+	var data:Dictionary = {
+		\"degree\": RovBaseNode.rotation_degrees,
+		\"basis\":RovBaseNode.transform.basis.get_rotation_quaternion(),
+		\"global_basis\": RovBaseNode.global_transform.basis.get_rotation_quaternion(),
+		\"deepth\": RovBaseNode.global_position.y,
+		\"Current_state\": \"PID\",
+		\"Velocity\": RovBaseNode.linear_velocity
+	}
+	return	data
+"
+
+[sub_resource type="GDScript" id="GDScript_cig8n"]
+script/source = "extends Control
+# 飞控相关的UI集合，显示基础的姿态和PID调节
+
+@export_group(\"UI nods\")
+@export var FCnode:Node
+@export var rov_state:ROVState
+
+@export var pitch_ctrl_node:Control
+@export var roll_ctrl_node:Control
+@export var yaw_ctrl_node:Control
+
+@export var StateNode:Control
+
+func _ready() -> void:
+	# 将PID控件绑定到相应的PID控制器
+	pitch_ctrl_node.pid_controller = FCnode.pid_pitch
+	roll_ctrl_node.pid_controller = FCnode.pid_roll
+	yaw_ctrl_node.pid_controller = FCnode.pid_yaw
+	
+	# 将rovstate节点绑定到相应UI
+	StateNode.rov_state = rov_state
+"
+
+[sub_resource type="GDScript" id="GDScript_q1wnw"]
+script/source = "extends HSlider
+# 推进器简易控制器
+@export var pusher:Node3D 
+@export var enable:bool = false
+
+func _physics_process(_delta: float) -> void:
+	if enable:
+		pusher.set_commd(value)
+"
+
+[node name="FlyControl" type="Node" unique_id=2098358319 node_paths=PackedStringArray("LFthruster", "LBthruster", "RFthruster", "RBthruster", "RovBaseNode")]
+script = SubResource("GDScript_c6ser")
+LFthruster = NodePath("")
+LBthruster = NodePath("")
+RFthruster = NodePath("")
+RBthruster = NodePath("")
+RovBaseNode = NodePath("")
+
+[node name="FC_UI" type="Control" parent="." unique_id=1882267439 node_paths=PackedStringArray("FCnode", "rov_state", "pitch_ctrl_node", "roll_ctrl_node", "yaw_ctrl_node", "StateNode")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = SubResource("GDScript_cig8n")
+FCnode = NodePath("..")
+rov_state = NodePath("")
+pitch_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel")
+roll_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel2")
+yaw_ctrl_node = NodePath("HBoxContainer/PID_cUI/PID_Ctrl_panel3")
+StateNode = NodePath("RovstatePanel")
+
+[node name="Rov_Ctrl_UI" type="VBoxContainer" parent="FC_UI" unique_id=489804719]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.95104164
+anchor_top = 0.9425926
+anchor_right = 0.95104164
+anchor_bottom = 0.9425926
+offset_left = -361.0
+offset_top = -396.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="HSlider" type="HSlider" parent="FC_UI/Rov_Ctrl_UI" unique_id=1371133593 node_paths=PackedStringArray("pusher")]
+layout_mode = 2
+size_flags_vertical = 3
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+script = SubResource("GDScript_q1wnw")
+pusher = NodePath("")
+
+[node name="HSlider2" type="HSlider" parent="FC_UI/Rov_Ctrl_UI" unique_id=731475289 node_paths=PackedStringArray("pusher")]
+layout_mode = 2
+size_flags_vertical = 3
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+script = SubResource("GDScript_q1wnw")
+pusher = NodePath("")
+
+[node name="HSlider3" type="HSlider" parent="FC_UI/Rov_Ctrl_UI" unique_id=662661800 node_paths=PackedStringArray("pusher")]
+layout_mode = 2
+size_flags_vertical = 3
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+script = SubResource("GDScript_q1wnw")
+pusher = NodePath("")
+
+[node name="HSlider4" type="HSlider" parent="FC_UI/Rov_Ctrl_UI" unique_id=77762209 node_paths=PackedStringArray("pusher")]
+layout_mode = 2
+size_flags_vertical = 3
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+script = SubResource("GDScript_q1wnw")
+pusher = NodePath("")
+
+[node name="RovstatePanel" parent="FC_UI" unique_id=809738074 instance=ExtResource("1_e5wq4")]
+layout_mode = 1
+anchor_left = 0.8822917
+anchor_top = 0.07962963
+anchor_bottom = 0.35740742
+
+[node name="HBoxContainer" type="HBoxContainer" parent="FC_UI" unique_id=1986647829]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 387.0
+offset_right = 866.0
+offset_bottom = 1040.0
+
+[node name="PID_cUI" type="VBoxContainer" parent="FC_UI/HBoxContainer" unique_id=1689383622]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="FC_UI/HBoxContainer/PID_cUI" unique_id=814496257]
+layout_mode = 2
+text = "角速度环"
+horizontal_alignment = 1
+
+[node name="PID_Ctrl_panel" parent="FC_UI/HBoxContainer/PID_cUI" unique_id=1787426440 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "俯仰调节"
+
+[node name="PID_Ctrl_panel2" parent="FC_UI/HBoxContainer/PID_cUI" unique_id=441177873 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "横滚调节"
+
+[node name="PID_Ctrl_panel3" parent="FC_UI/HBoxContainer/PID_cUI" unique_id=344434469 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "偏航调节(4推暂不可用)"
+
+[node name="PID_cUI2" type="VBoxContainer" parent="FC_UI/HBoxContainer" unique_id=1327041607]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_edit_use_anchors_ = true
+
+[node name="Label" type="Label" parent="FC_UI/HBoxContainer/PID_cUI2" unique_id=1307224841]
+layout_mode = 2
+text = "角度环"
+horizontal_alignment = 1
+
+[node name="PID_Ctrl_panel" parent="FC_UI/HBoxContainer/PID_cUI2" unique_id=1666181670 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "俯仰调节"
+
+[node name="PID_Ctrl_panel2" parent="FC_UI/HBoxContainer/PID_cUI2" unique_id=1293646242 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "横滚调节"
+
+[node name="PID_Ctrl_panel3" parent="FC_UI/HBoxContainer/PID_cUI2" unique_id=1472039994 instance=ExtResource("2_16ops")]
+layout_mode = 2
+Title = "偏航调节(4推暂不可用)"
