@@ -43,11 +43,12 @@ formats/gzip/compression_level=9
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+window/size/always_on_top=true
 window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/graph_2d/plugin.cfg")
+enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/gdserial/plugin.cfg", "res://addons/graph_2d/plugin.cfg")
 
 [input]
 

@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" uid="uid://uuc6hvmhq6ex" path="res://Levels/1_WelcomeScene/Imgs/RectLogoBG.svg" id="3_52ruq"]
 [ext_resource type="Texture2D" uid="uid://8jijjs58khew" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="4_kgcvo"]
 [ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="5_kgcvo"]
+[ext_resource type="Script" uid="uid://cbd84cxulr0nx" path="res://Scripts/UI_Scripts/Container_childen_slide_in.gd" id="7_72pl4"]
+[ext_resource type="PackedScene" uid="uid://bsqxlts8iyhs7" path="res://perfabs/UI_perfabs/ui_wrapper.tscn" id="8_oejcp"]
 
 [sub_resource type="GDScript" id="GDScript_kgcvo"]
 script/source = "extends Control
@@ -14,6 +16,7 @@ script/source = "extends Control
 @export var DemonstrationButton:Button
 @export var AuthorButton:Button
 @export var ExitButton:Button
+@export var HardWareTestButton:Button
 
 @export_category(\"指向场景\") 
 @export var ToolScenePath:String
@@ -22,26 +25,35 @@ script/source = "extends Control
 @export var LoadingScene:PackedScene
 
 @export_category(\"UI_Scale\") 
-@export var InfoContainer:VBoxContainer
+@onready var ButtonManager:Container = $MarginContainer/AllInfoBox/MarginContainer/Buttonmanager
 
 func _ready() -> void:
 	ToolButton.pressed.connect(_on_ToolButton_Pressed)
 	DemonstrationButton.pressed.connect(_on_DemonstrationButton_Pressed)
 	AuthorButton.pressed.connect(_on_AuthorButton_Pressed)
 	ExitButton.pressed.connect(_on_ExitButton_Pressed)
+	HardWareTestButton.pressed.connect(_on_HardwareButton_Pressed)
 	
 func loadToScene(_TargetScenePath:String):
+	# 进入加载页面，并在加载完成后进入新的场景
 	if not _TargetScenePath:
 		printerr(\"_TargetScenePath NULL\") 
 		return
 	var loadscene:Node = LoadingScene.instantiate()
 	
 	if loadscene:
+		# 滑出动画
+		await ButtonManager.slide_out()
+		
 		print(\"try open\", _TargetScenePath)
+		# 设定好过渡界面的目标后，进入过渡动画
 		loadscene.TargetScenePath = _TargetScenePath
 		print(\"loadS:\", loadscene.TargetScenePath)
 		var _Scene:PackedScene = PackedScene.new()
 		_Scene.pack(loadscene)
+		var tween:Tween = create_tween()
+		tween.tween_property(self, \"modulate\", Color.BLACK, 0.8)
+		await tween.finished
 		get_tree().change_scene_to_packed(_Scene)
 
 func _on_ToolButton_Pressed():
@@ -54,6 +66,8 @@ func _on_DemonstrationButton_Pressed():
 func _on_AuthorButton_Pressed():
 	loadToScene(AuthorScenePath)
 
+func _on_HardwareButton_Pressed():
+	pass
 
 func _on_ExitButton_Pressed():
 	get_tree().quit()
@@ -211,7 +225,7 @@ _data = {
 &"shake": SubResource("Animation_04nt6")
 }
 
-[node name="UI" type="Control" unique_id=99069433 node_paths=PackedStringArray("ToolButton", "DemonstrationButton", "AuthorButton", "ExitButton")]
+[node name="UI" type="Control" unique_id=99069433 node_paths=PackedStringArray("ToolButton", "DemonstrationButton", "AuthorButton", "ExitButton", "HardWareTestButton")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -219,10 +233,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = SubResource("GDScript_kgcvo")
-ToolButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button")
-DemonstrationButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button2")
-AuthorButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/Button3")
-ExitButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/VBoxContainer/ButtonExit")
+ToolButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper/Ctrl")
+DemonstrationButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper2/buidROV")
+AuthorButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper4/teaminfo")
+ExitButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper5/ButtonExit")
+HardWareTestButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper3/hardware")
 ToolScenePath = "res://Levels/2_RovSelectScene/selection_page.tscn"
 AuthorScenePath = "res://Levels/4_AuthorScene/StaffInfoPage.tscn"
 LoadingScene = ExtResource("1_04nt6")
@@ -261,9 +276,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 300
-theme_override_constants/margin_top = 200
+theme_override_constants/margin_top = 180
 theme_override_constants/margin_right = 300
-theme_override_constants/margin_bottom = 200
+theme_override_constants/margin_bottom = 150
 
 [node name="AllInfoBox" type="VBoxContainer" parent="MarginContainer" unique_id=2036327203]
 layout_mode = 2
@@ -273,7 +288,6 @@ layout_mode = 2
 size_flags_vertical = 0
 
 [node name="MovingLogo" type="TextureRect" parent="MarginContainer/AllInfoBox/HBoxContainer" unique_id=229981300]
-visible = false
 custom_minimum_size = Vector2(185, 185)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -310,7 +324,7 @@ theme_override_constants/shadow_offset_x = 5
 theme_override_constants/shadow_offset_y = 5
 theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 90
-text = "水下机器人模拟器"
+text = "水下机器人综合模拟系统"
 horizontal_alignment = 1
 
 [node name="SubTitle" type="Label" parent="MarginContainer/AllInfoBox/HBoxContainer/VBoxContainer" unique_id=1816671580]
@@ -337,35 +351,85 @@ autoplay = &"shake"
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/margin_left = 200
-theme_override_constants/margin_top = 150
+theme_override_constants/margin_top = 70
 theme_override_constants/margin_right = 200
 theme_override_constants/margin_bottom = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/AllInfoBox/MarginContainer" unique_id=956291082]
+[node name="Buttonmanager" type="VBoxContainer" parent="MarginContainer/AllInfoBox/MarginContainer" unique_id=956291082]
 layout_mode = 2
 size_flags_vertical = 3
+script = ExtResource("7_72pl4")
 
-[node name="Button" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=570777441]
+[node name="UI_wrapper" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=567955610 instance=ExtResource("8_oejcp")]
 layout_mode = 2
+default_enter_type = 0
+
+[node name="Ctrl" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper" unique_id=570777441]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("5_kgcvo")
+text = "机器人实机控制"
+
+[node name="UI_wrapper2" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=660242637 instance=ExtResource("8_oejcp")]
+layout_mode = 2
+default_enter_type = 0
+
+[node name="buidROV" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper2" unique_id=1268985826]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
-text = "机器人控制"
+text = "构建ROV仿真实例"
 
-[node name="Button2" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1268985826]
+[node name="UI_wrapper3" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=1841912166 instance=ExtResource("8_oejcp")]
 layout_mode = 2
+default_enter_type = 0
+
+[node name="hardware" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper3" unique_id=1724978313]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
-text = "构建ROV实例"
+text = "硬件调试"
 
-[node name="Button3" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=1552676748]
-visible = false
+[node name="UI_wrapper4" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=687915984 instance=ExtResource("8_oejcp")]
 layout_mode = 2
+default_enter_type = 0
+
+[node name="teaminfo" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper4" unique_id=1552676748]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
 text = "制作团队"
 
-[node name="ButtonExit" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/VBoxContainer" unique_id=189093758]
+[node name="UI_wrapper5" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=1488863446 instance=ExtResource("8_oejcp")]
 layout_mode = 2
+default_enter_type = 0
+
+[node name="ButtonExit" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper5" unique_id=189093758]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
 text = "退出系统"

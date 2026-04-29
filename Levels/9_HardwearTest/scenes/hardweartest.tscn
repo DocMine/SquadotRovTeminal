@@ -1,0 +1,230 @@
+[gd_scene format=3 uid="uid://2wytgf318i8w"]
+
+[ext_resource type="Script" uid="uid://crtspdj4khds4" path="res://Levels/9_HardwearTest/scenes/SerialPortManager.gd" id="1_22dhp"]
+[ext_resource type="Texture2D" uid="uid://5w1tgx4lwruc" path="res://icon.svg" id="2_c3au8"]
+
+[sub_resource type="GDScript" id="GDScript_c3au8"]
+script/source = "extends VBoxContainer
+
+@onready var menubutton_node: MenuButton = $HBoxContainer/MenuButton
+
+signal com_choosed(Menuid:int)
+signal com_info_need_update()
+signal com_try_open_port(portid:int)
+
+var CurrentPort_id:int = -1
+var infodic:Dictionary
+
+func _updateMenu(ComDic:Dictionary):
+	# 更新弹出菜单
+	infodic = ComDic.duplicate()
+	var popmenu:PopupMenu = menubutton_node.get_popup()
+	popmenu.clear()
+	popmenu.add_separator(\"可用串口\")
+	for portid:int in ComDic.keys():
+		var showtext:String = ComDic[portid].get(\"port_name\",\"UnknowName\") +\" : \"+ ComDic[portid].get(\"device_name\",\"noinfo\")
+		popmenu.add_item(showtext, portid)
+
+func _ready() -> void:
+	# 绑定点击信号 ✅ 这是关键！
+	menubutton_node.get_popup().id_pressed.connect(_on_menu_item_selected)
+
+# +++++++++++++++++++++++++++内部发射信号+++++++++++++++++++++
+
+func _on_menu_item_selected(menuid: int) -> void:
+	# 菜单被点击时会触发这个函数,后端更新当前活跃的com信息
+	print(\"你选择了id: \", menuid, \" 项\")
+	CurrentPort_id = menuid
+	com_choosed.emit([menuid])
+	
+
+func _on_menu_button_pressed() -> void:
+	# 点击的时候发出信号，后端根据这个信号刷新串口信息；
+	# 后端刷新完成后，也发出信号，前端根据后端的信号刷新UI信息
+	# 问题是信号不知道好不好追踪？代码结构会很乱？
+	com_info_need_update.emit()
+	pass # Replace with function body.
+
+# +++++++++++++++++++++++++++++外部信号驱动+++++++++++++++++++++
+
+func _on_serialinfo_changed(serial_info_dic:Dictionary):
+	# 这个函数应当连接后端串口信息刷新的信号
+	print(\"ui收到串口信息刷新：\", serial_info_dic)
+	_updateMenu(serial_info_dic)
+
+func _on_button_openport_pressed() -> void:
+	 # 点击打开串口
+	if CurrentPort_id != -1:
+		print(\"UI试图打开串口:\", infodic[CurrentPort_id])
+		com_try_open_port.emit(CurrentPort_id)
+"
+
+[node name="Hardweartest" type="Control" unique_id=1552365679]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SerialManager" type="Node" parent="." unique_id=154671153]
+script = ExtResource("1_22dhp")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1717570453]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="topBar" type="HBoxContainer" parent="VBoxContainer" unique_id=1676171853]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.1
+
+[node name="logo" type="TextureRect" parent="VBoxContainer/topBar" unique_id=1821666231]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.2
+texture = ExtResource("2_c3au8")
+stretch_mode = 5
+
+[node name="HSplitContainer" type="HSplitContainer" parent="VBoxContainer" unique_id=948382052]
+layout_mode = 2
+size_flags_vertical = 3
+split_offsets = PackedInt32Array(400, 0)
+drag_area_highlight_in_editor = true
+split_offset = 400
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1801583532]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=779177047]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button2" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=1593700578]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button3" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=1879119931]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button4" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=2106813884]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button5" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer" unique_id=1221862780]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1245736842]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer2" unique_id=493345471]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button2" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer2" unique_id=199898754]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button3" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer2" unique_id=1938381557]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button4" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer2" unique_id=691348471]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button5" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer2" unique_id=1733206387]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer3" type="VBoxContainer" parent="VBoxContainer/HSplitContainer" unique_id=1041591991]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer3" unique_id=92964502]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button2" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer3" unique_id=694958908]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button3" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer3" unique_id=2075987837]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button4" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer3" unique_id=2048307421]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Button5" type="Button" parent="VBoxContainer/HSplitContainer/VBoxContainer3" unique_id=1886336108]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=1436282808]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SerialPortChoose" type="VBoxContainer" parent="VBoxContainer/HBoxContainer" unique_id=1425052229]
+layout_mode = 2
+size_flags_horizontal = 3
+script = SubResource("GDScript_c3au8")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/SerialPortChoose" unique_id=1317529849]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer/SerialPortChoose/HBoxContainer" unique_id=1700044566]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+text = "Port :"
+horizontal_alignment = 1
+
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/HBoxContainer/SerialPortChoose/HBoxContainer" unique_id=1754561136]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Choose a Port"
+icon = ExtResource("2_c3au8")
+flat = false
+icon_alignment = 2
+expand_icon = true
+
+[node name="Button_openport" type="Button" parent="VBoxContainer/HBoxContainer/SerialPortChoose" unique_id=1212681092]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.6
+text = "Open"
+
+[node name="Button" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=524740052]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button2" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=198588755]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button3" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=633832148]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button4" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=1356069955]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Button5" type="Button" parent="VBoxContainer/HBoxContainer" unique_id=328772594]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="SerialPortUpdated" from="SerialManager" to="VBoxContainer/HBoxContainer/SerialPortChoose" method="_updateMenu"]
+[connection signal="com_info_need_update" from="VBoxContainer/HBoxContainer/SerialPortChoose" to="SerialManager" method="updateports"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/SerialPortChoose/HBoxContainer/MenuButton" to="VBoxContainer/HBoxContainer/SerialPortChoose" method="_on_menu_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/SerialPortChoose/Button_openport" to="VBoxContainer/HBoxContainer/SerialPortChoose" method="_on_button_openport_pressed"]
