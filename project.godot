@@ -48,7 +48,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/gdserial/plugin.cfg", "res://addons/graph_2d/plugin.cfg")
+enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/gdserial/plugin.cfg", "res://addons/graph_2d/plugin.cfg", "res://addons/tau-plot/plugin.cfg")
 
 [input]
 
