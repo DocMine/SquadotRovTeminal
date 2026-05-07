@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://clmnjypbcr53d"
+
+[deps]
+
+files=["res://Levels/5_rovsim/locale/ui_translations.zh_CN.translation", "res://Levels/5_rovsim/locale/ui_translations.en.translation"]
+
+source_file="res://Levels/5_rovsim/locale/ui_translations.csv"
+dest_files=["res://Levels/5_rovsim/locale/ui_translations.zh_CN.translation", "res://Levels/5_rovsim/locale/ui_translations.en.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

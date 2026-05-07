@@ -7,71 +7,8 @@
 [ext_resource type="Texture2D" uid="uid://8jijjs58khew" path="res://Levels/1_WelcomeScene/Imgs/RectLogoCenter.svg" id="4_kgcvo"]
 [ext_resource type="Theme" uid="uid://cvv1ovruavxb8" path="res://Levels/1_WelcomeScene/UITheme/UItheme_UnderWater.tres" id="5_kgcvo"]
 [ext_resource type="Script" uid="uid://cbd84cxulr0nx" path="res://Scripts/UI_Scripts/Container_childen_slide_in.gd" id="7_72pl4"]
-[ext_resource type="PackedScene" uid="uid://bsqxlts8iyhs7" path="res://perfabs/UI_perfabs/ui_wrapper.tscn" id="8_oejcp"]
-
-[sub_resource type="GDScript" id="GDScript_kgcvo"]
-script/source = "extends Control
-
-@export var ToolButton:Button
-@export var DemonstrationButton:Button
-@export var AuthorButton:Button
-@export var ExitButton:Button
-@export var HardWareTestButton:Button
-
-@export_category(\"指向场景\") 
-@export var ToolScenePath:String
-@export var DemonstrationScenePath:String
-@export var AuthorScenePath:String
-@export var LoadingScene:PackedScene
-
-@export_category(\"UI_Scale\") 
-@onready var ButtonManager:Container = $MarginContainer/AllInfoBox/MarginContainer/Buttonmanager
-
-func _ready() -> void:
-	ToolButton.pressed.connect(_on_ToolButton_Pressed)
-	DemonstrationButton.pressed.connect(_on_DemonstrationButton_Pressed)
-	AuthorButton.pressed.connect(_on_AuthorButton_Pressed)
-	ExitButton.pressed.connect(_on_ExitButton_Pressed)
-	HardWareTestButton.pressed.connect(_on_HardwareButton_Pressed)
-	
-func loadToScene(_TargetScenePath:String):
-	# 进入加载页面，并在加载完成后进入新的场景
-	if not _TargetScenePath:
-		printerr(\"_TargetScenePath NULL\") 
-		return
-	var loadscene:Node = LoadingScene.instantiate()
-	
-	if loadscene:
-		# 滑出动画
-		await ButtonManager.slide_out()
-		
-		print(\"try open\", _TargetScenePath)
-		# 设定好过渡界面的目标后，进入过渡动画
-		loadscene.TargetScenePath = _TargetScenePath
-		print(\"loadS:\", loadscene.TargetScenePath)
-		var _Scene:PackedScene = PackedScene.new()
-		_Scene.pack(loadscene)
-		var tween:Tween = create_tween()
-		tween.tween_property(self, \"modulate\", Color.BLACK, 0.8)
-		await tween.finished
-		get_tree().change_scene_to_packed(_Scene)
-
-func _on_ToolButton_Pressed():
-	loadToScene(ToolScenePath)
-	
-func _on_DemonstrationButton_Pressed():
-	loadToScene(DemonstrationScenePath)
-
-
-func _on_AuthorButton_Pressed():
-	loadToScene(AuthorScenePath)
-
-func _on_HardwareButton_Pressed():
-	pass
-
-func _on_ExitButton_Pressed():
-	get_tree().quit()
-"
+[ext_resource type="PackedScene" path="res://perfabs/UI_perfabs/ui_wrapper.tscn" id="8_oejcp"]
+[ext_resource type="Script" uid="uid://cqa306slno3nu" path="res://Levels/1_WelcomeScene/WelcomeScene.gd" id="9_welcome"]
 
 [sub_resource type="Shader" id="Shader_04nt6"]
 code = "shader_type canvas_item;
@@ -132,7 +69,6 @@ func _physics_process(_delta: float) -> void:
 		LogoCenter.rotation = 0
 
 func _on_resized() -> void:
-	print(\"resized\")
 	#await get_tree().create_timer(0.2).timeout
 	await get_tree().process_frame
 	LogoCenter.pivot_offset = Vector2(size.x/2+0.65, size.y/2-15)
@@ -225,22 +161,24 @@ _data = {
 &"shake": SubResource("Animation_04nt6")
 }
 
-[node name="UI" type="Control" unique_id=99069433 node_paths=PackedStringArray("ToolButton", "DemonstrationButton", "AuthorButton", "ExitButton", "HardWareTestButton")]
+[node name="UI" type="Control" unique_id=99069433]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = SubResource("GDScript_kgcvo")
-ToolButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper/Ctrl")
-DemonstrationButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper2/buidROV")
-AuthorButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper4/teaminfo")
-ExitButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper5/ButtonExit")
-HardWareTestButton = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper3/hardware")
-ToolScenePath = "res://Levels/2_RovSelectScene/selection_page.tscn"
-AuthorScenePath = "res://Levels/4_AuthorScene/StaffInfoPage.tscn"
-LoadingScene = ExtResource("1_04nt6")
+script = ExtResource("9_welcome")
+tool_button_path = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper/Ctrl")
+demonstration_button_path = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper2/buidROV")
+pid_teach_button_path = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper3/hardware")
+exit_button_path = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper5/ButtonExit")
+rov_sim_button_path = NodePath("MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper6/ROVSimButton")
+tool_scene_path = "res://Levels/6_SquareDotSerial/Scenes/Main/MainWorkspace.tscn"
+demonstration_scene_path = "res://Levels/2_RovSelectScene/selection_page.tscn"
+pid_teach_scene_path = "res://Levels/4_PIDTeach/scenes/pid_teach.tscn"
+rov_sim_scene_path = "res://Levels/5_rovsim/scenes/main/main.tscn"
+loading_scene = ExtResource("1_04nt6")
 
 [node name="BG" type="TextureRect" parent="." unique_id=282552935]
 modulate = Color(0.577008, 0.577008, 0.577008, 1)
@@ -361,8 +299,6 @@ size_flags_vertical = 3
 script = ExtResource("7_72pl4")
 
 [node name="UI_wrapper" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=567955610 instance=ExtResource("8_oejcp")]
-layout_mode = 2
-default_enter_type = 0
 
 [node name="Ctrl" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper" unique_id=570777441]
 layout_mode = 1
@@ -375,8 +311,6 @@ theme = ExtResource("5_kgcvo")
 text = "机器人实机控制"
 
 [node name="UI_wrapper2" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=660242637 instance=ExtResource("8_oejcp")]
-layout_mode = 2
-default_enter_type = 0
 
 [node name="buidROV" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper2" unique_id=1268985826]
 layout_mode = 1
@@ -390,8 +324,6 @@ theme = ExtResource("5_kgcvo")
 text = "构建ROV仿真实例"
 
 [node name="UI_wrapper3" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=1841912166 instance=ExtResource("8_oejcp")]
-layout_mode = 2
-default_enter_type = 0
 
 [node name="hardware" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper3" unique_id=1724978313]
 layout_mode = 1
@@ -405,8 +337,7 @@ theme = ExtResource("5_kgcvo")
 text = "硬件调试"
 
 [node name="UI_wrapper4" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=687915984 instance=ExtResource("8_oejcp")]
-layout_mode = 2
-default_enter_type = 0
+visible = false
 
 [node name="teaminfo" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper4" unique_id=1552676748]
 layout_mode = 1
@@ -419,9 +350,20 @@ size_flags_vertical = 3
 theme = ExtResource("5_kgcvo")
 text = "制作团队"
 
+[node name="UI_wrapper6" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=994102114 instance=ExtResource("8_oejcp")]
+
+[node name="ROVSimButton" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper6" unique_id=1149439613]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 3
+theme = ExtResource("5_kgcvo")
+text = "ROV sim"
+
 [node name="UI_wrapper5" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager" unique_id=1488863446 instance=ExtResource("8_oejcp")]
-layout_mode = 2
-default_enter_type = 0
 
 [node name="ButtonExit" type="Button" parent="MarginContainer/AllInfoBox/MarginContainer/Buttonmanager/UI_wrapper5" unique_id=189093758]
 layout_mode = 1

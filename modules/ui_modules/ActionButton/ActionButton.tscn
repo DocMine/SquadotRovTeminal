@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://btskvxwu1vdm0"]
+
+[ext_resource type="Script" uid="uid://ckl1ven840nb7" path="res://modules/ui_modules/ActionButton/ActionButton.gd" id="1"]
+
+[node name="ActionButton" type="Button" unique_id=2077307332]
+custom_minimum_size = Vector2(0, 34)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1")

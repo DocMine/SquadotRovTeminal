@@ -1,0 +1,45 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://modules/ui_modules/FileDialogPanel/FileDialogPanel.gd" id="1"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/LabelInputRow/LabelInputRow.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/ActionButton/ActionButton.tscn" id="3"]
+
+[node name="FileDialogPanel" type="VBoxContainer"]
+script = ExtResource("1")
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 2
+text = "文件"
+unique_name_in_owner = true
+
+[node name="FileNameRow" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="PathRow" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="ActionRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BrowseButton" parent="ActionRow" instance=ExtResource("3")]
+unique_name_in_owner = true
+text = "浏览"
+
+[node name="SaveButton" parent="ActionRow" instance=ExtResource("3")]
+unique_name_in_owner = true
+text = "保存"
+
+[node name="LoadButton" parent="ActionRow" instance=ExtResource("3")]
+unique_name_in_owner = true
+text = "加载"
+
+[node name="FileDialog" type="FileDialog" parent="."]
+title = "选择文件"
+size = Vector2i(900, 560)
+exclusive = false
+use_native_dialog = true
+file_mode = 4
+access = 2
+unique_name_in_owner = true

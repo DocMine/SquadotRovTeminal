@@ -1,0 +1,638 @@
+[gd_scene format=3 uid="uid://bx8nmdrkwagyt"]
+
+[ext_resource type="Script" uid="uid://cic2hijduqgqm" path="res://Levels/5_rovsim/scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://Levels/5_rovsim/scenes/rov/rov.tscn" id="2_rov"]
+[ext_resource type="Script" uid="uid://bdaccjhsw8bbf" path="res://Levels/5_rovsim/scripts/data/data_recorder.gd" id="3_recorder"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/TauRealtimeChart/TauRealtimeChart.tscn" id="4_chart"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/LabelValueRow/LabelValueRow.tscn" id="5_value_row"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/LabelOptionRow/LabelOptionRow.tscn" id="6_option_row"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/LabelSpinRow/LabelSpinRow.tscn" id="7_spin_row"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/StatusBadge/StatusBadge.tscn" id="8_status_badge"]
+[ext_resource type="PackedScene" uid="uid://btskvxwu1vdm0" path="res://modules/ui_modules/ActionButton/ActionButton.tscn" id="9_action_button"]
+[ext_resource type="PackedScene" path="res://modules/ui_modules/FileDialogPanel/FileDialogPanel.tscn" id="10_file_dialog"]
+[ext_resource type="PackedScene" path="res://Levels/5_rovsim/scenes/visualization/force_vector_renderer.tscn" id="11_force_renderer"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/root_control.gd" id="12_root_control"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_toolbar_panel.gd" id="13_toolbar_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_resource_panel.gd" id="14_resource_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_simulation_tab.gd" id="15_simulation_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_assembly_panel.gd" id="16_assembly_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_thruster_designer_panel.gd" id="17_thruster_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_chart_workspace.gd" id="18_chart_workspace"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_dashboard_panel.gd" id="19_dashboard_panel"]
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/ui/panels/rovsim_status_bar_panel.gd" id="20_status_bar_panel"]
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 1
+ambient_light_source = 3
+ambient_light_color = Color(0.22, 0.32, 0.36, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_water"]
+size = Vector2(22, 22)
+
+[sub_resource type="StandardMaterial3D" id="Material_water"]
+transparency = 1
+albedo_color = Color(0.03, 0.18, 0.24, 0.62)
+roughness = 0.35
+
+[sub_resource type="StyleBoxFlat" id="Style_toolbar"]
+bg_color = Color(0.045, 0.055, 0.065, 0.96)
+border_width_bottom = 1
+border_color = Color(0.16, 0.22, 0.28, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.07, 0.085, 0.1, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.26, 0.31, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="Main" type="Node" unique_id=1667138290]
+script = ExtResource("1_main")
+
+[node name="DataRecorder" type="Node" parent="." unique_id=1358861911]
+script = ExtResource("3_recorder")
+
+[node name="World" type="Node3D" parent="." unique_id=98039611]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="World" unique_id=1245389136]
+environment = SubResource("Environment_main")
+
+[node name="SunLight" type="DirectionalLight3D" parent="World" unique_id=1061896645]
+transform = Transform3D(0.87542605, -0.24170567, 0.41857806, 0, 0.86599, 0.50006133, -0.48335207, -0.43776673, 0.75811017, 0, 4, 2)
+light_energy = 2.0
+
+[node name="Camera3D" type="Camera3D" parent="World" unique_id=461633533]
+transform = Transform3D(1, 0, 0, 0, 0.829038, 0.559193, 0, -0.559193, 0.829038, 0, 2.2, 5.1)
+current = true
+fov = 48.0
+
+[node name="WaterPlane" type="MeshInstance3D" parent="World" unique_id=672816337]
+mesh = SubResource("PlaneMesh_water")
+surface_material_override/0 = SubResource("Material_water")
+
+[node name="ROV" parent="World" unique_id=468062667 instance=ExtResource("2_rov")]
+
+[node name="ForceVectorRenderer" parent="World" unique_id=1982180266 instance=ExtResource("11_force_renderer")]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=539722482]
+
+[node name="RootControl" type="Control" parent="UI" unique_id=1696189001]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("12_root_control")
+workbench_tabs_path = NodePath("RootVBox/BodyRow/WorkbenchTabs")
+toolbar_panel_path = NodePath("RootVBox/Toolbar")
+resource_panel_path = NodePath("RootVBox/BodyRow/ResourcePanel")
+simulation_tab_path = NodePath("RootVBox/BodyRow/WorkbenchTabs/SimulationTab")
+assembly_panel_path = NodePath("RootVBox/BodyRow/WorkbenchTabs/AssemblyTab")
+thruster_designer_panel_path = NodePath("RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab")
+chart_workspace_path = NodePath("RootVBox/BodyRow/WorkbenchTabs/ChartsTab")
+dashboard_panel_path = NodePath("RootVBox/BodyRow/InspectorPanel")
+status_bar_panel_path = NodePath("RootVBox/StatusBar")
+
+[node name="RootVBox" type="VBoxContainer" parent="UI/RootControl" unique_id=96831974]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Toolbar" type="PanelContainer" parent="UI/RootControl/RootVBox" unique_id=1675905825]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Style_toolbar")
+script = ExtResource("13_toolbar_panel")
+
+[node name="ToolbarMargin" type="MarginContainer" parent="UI/RootControl/RootVBox/Toolbar" unique_id=811667381]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="ToolbarRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/Toolbar/ToolbarMargin" unique_id=1533936063]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="StartButton" parent="UI/RootControl/RootVBox/Toolbar/ToolbarMargin/ToolbarRow" unique_id=1061228862 instance=ExtResource("9_action_button")]
+self_modulate = Color(0.18, 0.52, 0.86, 1)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "开始仿真"
+variant = 0
+
+[node name="RecordButton" parent="UI/RootControl/RootVBox/Toolbar/ToolbarMargin/ToolbarRow" unique_id=743451090 instance=ExtResource("9_action_button")]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "开始记录"
+
+[node name="ClearButton" parent="UI/RootControl/RootVBox/Toolbar/ToolbarMargin/ToolbarRow" unique_id=1494065326 instance=ExtResource("9_action_button")]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "清空"
+
+[node name="StatusBadge" parent="UI/RootControl/RootVBox/Toolbar/ToolbarMargin/ToolbarRow" unique_id=831900889 instance=ExtResource("8_status_badge")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BodyRow" type="HBoxContainer" parent="UI/RootControl/RootVBox" unique_id=1103148274]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ResourcePanel" type="PanelContainer" parent="UI/RootControl/RootVBox/BodyRow" unique_id=1114755937]
+custom_minimum_size = Vector2(270, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("Style_panel")
+script = ExtResource("14_resource_panel")
+
+[node name="ResourceMargin" type="MarginContainer" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel" unique_id=1792756286]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ResourceVBox" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin" unique_id=2105334332]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ResourceTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=439255053]
+layout_mode = 2
+text = "项目资源"
+
+[node name="ProjectPathRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=829242385 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="MachinePathRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1027442103 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="ThrusterPathRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1295272629 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="RecordPathRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=384764860 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="ChartPathRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=315647334 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="RecordStateSeparator" type="HSeparator" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=828508665]
+layout_mode = 2
+
+[node name="SampleRateRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1809478021 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="FrameCountRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=728485334 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="RecordSavedRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=2048341605 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="PlaybackSeparator" type="HSeparator" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1151530285]
+layout_mode = 2
+
+[node name="PlaybackTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=36868834]
+layout_mode = 2
+text = "记录回放"
+
+[node name="RecordActionRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1171325805]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SaveRecordButton" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox/RecordActionRow" unique_id=1594274725 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "保存记录"
+
+[node name="LoadRecordButton" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox/RecordActionRow" unique_id=1189387179 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "加载记录"
+
+[node name="ExportCsvButton" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox/RecordActionRow" unique_id=454958800 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "导出 CSV"
+
+[node name="PlaybackSlider" type="HSlider" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=886557629]
+layout_mode = 2
+max_value = 0.0
+
+[node name="PlaybackFrameRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=230943522 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="PlaybackDepthRow" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1995691831 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="PlaybackInfo" type="RichTextLabel" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=2126437868]
+custom_minimum_size = Vector2(0, 68)
+layout_mode = 2
+bbcode_enabled = true
+text = "加载 .rovrecord.json 后可查看记录摘要。"
+fit_content = true
+scroll_active = false
+
+[node name="ReportSeparator" type="HSeparator" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=575503730]
+layout_mode = 2
+
+[node name="ReportTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1350497305]
+layout_mode = 2
+text = "评估报告"
+
+[node name="ReportText" type="RichTextLabel" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1937790153]
+custom_minimum_size = Vector2(0, 92)
+layout_mode = 2
+bbcode_enabled = true
+text = "等待仿真数据"
+fit_content = true
+scroll_active = false
+
+[node name="FileDialogPanel" parent="UI/RootControl/RootVBox/BodyRow/ResourcePanel/ResourceMargin/ResourceVBox" unique_id=1441983416 instance=ExtResource("10_file_dialog")]
+visible = false
+layout_mode = 2
+file_filters = PackedStringArray("*.json ; JSON 文件", "*.* ; 所有文件")
+
+[node name="WorkbenchTabs" type="TabContainer" parent="UI/RootControl/RootVBox/BodyRow" unique_id=1525068423]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="SimulationTab" type="Control" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs" unique_id=1504371454]
+layout_mode = 2
+size_flags_vertical = 3
+metadata/_tab_index = 0
+script = ExtResource("15_simulation_panel")
+
+[node name="ForceLegendPanel" type="PanelContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/SimulationTab" unique_id=23708694]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.02
+anchor_top = 0.58
+anchor_right = 0.36
+anchor_bottom = 0.98
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="ForceLegendMargin" type="MarginContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/SimulationTab/ForceLegendPanel" unique_id=1143029369]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="ForceLegendVBox" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/SimulationTab/ForceLegendPanel/ForceLegendMargin" unique_id=1703931870]
+layout_mode = 2
+
+[node name="ForceLegendTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/SimulationTab/ForceLegendPanel/ForceLegendMargin/ForceLegendVBox" unique_id=983667783]
+layout_mode = 2
+text = "力图例"
+
+[node name="ForceLegendText" type="RichTextLabel" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/SimulationTab/ForceLegendPanel/ForceLegendMargin/ForceLegendVBox" unique_id=1892929884]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[color=#ff1f14]红色：推进器力[/color]
+[color=#35d260]绿色：浮力[/color]
+[color=#ffdc2e]黄色：重力[/color]
+[color=#267aff]蓝色：阻力[/color]
+[color=#00eade]青色：控制辅助[/color]
+[color=#ffffff]白色：合力[/color]
+[color=#b84dff]紫色：力矩[/color]"
+fit_content = true
+scroll_active = false
+
+[node name="AssemblyTab" type="ScrollContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs" unique_id=1052344759]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+script = ExtResource("16_assembly_panel")
+
+[node name="AssemblyVBox" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab" unique_id=1670720456]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ControlTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=565105781]
+layout_mode = 2
+text = "运行控制"
+
+[node name="PresetRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=850813104 instance=ExtResource("6_option_row")]
+layout_mode = 2
+
+[node name="CommandRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=436694492 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="EnvironmentTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1685117079]
+layout_mode = 2
+text = "环境与海流"
+
+[node name="CurrentModeRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=710746364 instance=ExtResource("6_option_row")]
+layout_mode = 2
+
+[node name="CurrentXRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=625719101 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="CurrentZRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=282641030 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="TurbulenceRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1436306646 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ControlSystemTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=827920464]
+layout_mode = 2
+text = "控制系统"
+
+[node name="ControlModeRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1716624503 instance=ExtResource("6_option_row")]
+layout_mode = 2
+
+[node name="TargetDepthRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1976762275 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="TargetHeadingRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=597113006 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="TargetSpeedRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1548002782 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="BuilderTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1283459963]
+layout_mode = 2
+text = "运行时拼装"
+
+[node name="MachineActionRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=521929853]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SaveMachineButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/MachineActionRow" unique_id=105039717 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "保存机器"
+
+[node name="LoadMachineButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/MachineActionRow" unique_id=1402177925 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "加载机器"
+
+[node name="FrameActionRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=2118404914]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ImportFrameButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/FrameActionRow" unique_id=1605473717 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "导入框架"
+
+[node name="ClearFrameButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/FrameActionRow" unique_id=1065503459 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "清除框架"
+
+[node name="FramePathRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=315407081 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="MachineMassRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=615252720 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="MachineVolumeRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=2052353322 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="MachineComYRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=299900095 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="MachineCobYRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=2091036788 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="BuilderButtonRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1092388636]
+layout_mode = 2
+
+[node name="AddThrusterButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/BuilderButtonRow" unique_id=1958131146 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "添加推进器"
+
+[node name="RemoveThrusterButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox/BuilderButtonRow" unique_id=1219612080 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "删除最后一个"
+
+[node name="ThrusterTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1850835235]
+layout_mode = 2
+text = "推进器"
+
+[node name="ThrusterList" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=31183295]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SelectedThrusterTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=223850986]
+layout_mode = 2
+text = "选中推进器"
+
+[node name="SelectedThrusterRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1607909486 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="ThrusterPositionXRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1032223164 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterPositionYRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=158817796 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterPositionZRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=22967324 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterRotationXRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1609816821 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterRotationYRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=1566845450 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterRotationZRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/AssemblyTab/AssemblyVBox" unique_id=437408619 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterDesignerTab" type="ScrollContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs" unique_id=273168854]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+script = ExtResource("17_thruster_panel")
+
+[node name="ThrusterDesignerVBox" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab" unique_id=1968129881]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ThrusterDesignerTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=1569208153]
+layout_mode = 2
+text = "推进器模板参数"
+
+[node name="ThrusterActionRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=152774029]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SaveThrusterButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox/ThrusterActionRow" unique_id=1874216266 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "保存推进器"
+
+[node name="LoadThrusterButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox/ThrusterActionRow" unique_id=1545706590 instance=ExtResource("9_action_button")]
+layout_mode = 2
+text = "加载推进器"
+
+[node name="ThrusterMaxForwardRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=988727754 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterMaxReverseRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=249232024 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterDiameterRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=1494075801 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ThrusterLengthRow" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ThrusterDesignerTab/ThrusterDesignerVBox" unique_id=1738683956 instance=ExtResource("7_spin_row")]
+layout_mode = 2
+
+[node name="ChartsTab" type="Control" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs" unique_id=899216777]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+script = ExtResource("18_chart_workspace")
+
+[node name="ChartActionRow" type="HBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab" unique_id=2011897547]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+offset_bottom = 38.0
+theme_override_constants/separation = 6
+
+[node name="SaveChartLayoutButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartActionRow" unique_id=1007826238 instance=ExtResource("9_action_button")]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "保存图表"
+
+[node name="LoadChartLayoutButton" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartActionRow" unique_id=751669529 instance=ExtResource("9_action_button")]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "加载图表"
+
+[node name="ChartsGrid" type="GridContainer" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab" unique_id=2095038516]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.08
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 2
+
+[node name="DepthChart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=1880801920 instance=ExtResource("4_chart")]
+layout_mode = 2
+y_unit = "m"
+
+[node name="AttitudeChart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=903948899 instance=ExtResource("4_chart")]
+layout_mode = 2
+title = "姿态 / 时间"
+title_key = "CHART_ATTITUDE"
+y_unit = "deg"
+
+[node name="ThrustChart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=563774953 instance=ExtResource("4_chart")]
+layout_mode = 2
+title = "推进器推力 / 时间"
+title_key = "CHART_THRUST"
+y_unit = "N"
+
+[node name="SpeedChart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=289440301 instance=ExtResource("4_chart")]
+layout_mode = 2
+title = "速度 / 时间"
+title_key = "CHART_SPEED"
+y_unit = "m/s"
+
+[node name="ForceChart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=2011080624 instance=ExtResource("4_chart")]
+layout_mode = 2
+title = "力 / 时间"
+title_key = "CHART_FORCE"
+y_unit = "N"
+
+[node name="V2Chart" parent="UI/RootControl/RootVBox/BodyRow/WorkbenchTabs/ChartsTab/ChartsGrid" unique_id=1824359735 instance=ExtResource("4_chart")]
+layout_mode = 2
+title = "V2 工程状态"
+title_key = "CHART_V2_ENGINEERING"
+
+[node name="InspectorPanel" type="PanelContainer" parent="UI/RootControl/RootVBox/BodyRow" unique_id=1097894187]
+custom_minimum_size = Vector2(330, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("Style_panel")
+script = ExtResource("19_dashboard_panel")
+
+[node name="InspectorMargin" type="MarginContainer" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel" unique_id=392911126]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="InspectorVBox" type="VBoxContainer" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin" unique_id=1857291358]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DashboardTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=94247471]
+layout_mode = 2
+text = "实时状态"
+
+[node name="DepthRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=87334878 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="VelocityRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=1880748 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="AttitudeRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=1489383268 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="AngularRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=395897263 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="NetForceRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=960015306 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="NetTorqueRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=378182734 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="V2DashboardTitle" type="Label" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=106217164]
+layout_mode = 2
+text = "工程状态"
+
+[node name="CurrentVelocityRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=117356534 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="RelativeVelocityRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=198772879 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="SensorDepthRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=34492693 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="SensorHeadingRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=2037885129 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="ControlErrorRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=183864437 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="TaskStatusRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=1508262789 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="AssistForceRow" parent="UI/RootControl/RootVBox/BodyRow/InspectorPanel/InspectorMargin/InspectorVBox" unique_id=598583768 instance=ExtResource("5_value_row")]
+layout_mode = 2
+
+[node name="StatusBar" type="PanelContainer" parent="UI/RootControl/RootVBox" unique_id=869063967]
+layout_mode = 2
+theme_override_styles/panel = SubResource("Style_toolbar")
+script = ExtResource("20_status_bar_panel")
+
+[node name="StatusBarMargin" type="MarginContainer" parent="UI/RootControl/RootVBox/StatusBar" unique_id=563598528]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 4
+
+[node name="StatusBarText" type="Label" parent="UI/RootControl/RootVBox/StatusBar/StatusBarMargin" unique_id=1004927347]
+layout_mode = 2
+text = "仿真已暂停"

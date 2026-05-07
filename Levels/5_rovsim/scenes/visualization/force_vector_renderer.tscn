@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/visualization/force_vector_renderer.gd" id="1_renderer"]
+
+[node name="ForceVectorRenderer" type="Node3D"]
+script = ExtResource("1_renderer")
+
+[node name="VectorMesh" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true

@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/ui_modules/LabelValueRow/LabelValueRow.gd" id="1"]
+
+[node name="LabelValueRow" type="HBoxContainer"]
+script = ExtResource("1")
+theme_override_constants/separation = 10
+
+[node name="LabelNode" type="Label" parent="."]
+custom_minimum_size = Vector2(84, 0)
+layout_mode = 2
+text = ""
+unique_name_in_owner = true
+
+[node name="ValueNode" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+text = ""
+horizontal_alignment = 2
+unique_name_in_owner = true

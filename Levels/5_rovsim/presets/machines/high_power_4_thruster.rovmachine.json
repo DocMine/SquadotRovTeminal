@@ -1,0 +1,32 @@
+{
+	"schema": "rovsim.machine",
+	"version": 1,
+	"created_at": "2026-05-04T00:00:00Z",
+	"units": {
+		"length": "m",
+		"force": "N",
+		"torque": "N*m",
+		"angle": "rad",
+		"time": "s"
+	},
+	"payload": {
+		"machine_id": "high_power_4_thruster",
+		"display_name": "High Power 4 Thruster",
+		"frame_model_path": "",
+		"mass_kg": 52.0,
+		"displaced_volume_m3": 0.053,
+		"body_size_m": [1.05, 0.36, 0.78],
+		"center_of_mass_m": [0.0, -0.05, 0.0],
+		"center_of_buoyancy_m": [0.0, 0.18, 0.0],
+		"drag_coefficients": [54.0, 70.0, 58.0],
+		"angular_drag": [4.0, 4.2, 4.0],
+		"thrusters": [
+			{"instance_id": "Thruster_T1", "display_name": "T1", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [-0.55, 0.0, 0.38], "rotation_rad": [0.0, 0.0, 0.0], "command_group": "main", "enabled": true, "mount_note": "front-left", "max_thrust_n": 70.0, "local_force_axis": [0.0, 0.0, -1.0]},
+			{"instance_id": "Thruster_T2", "display_name": "T2", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [0.55, 0.0, 0.38], "rotation_rad": [0.0, 0.0, 0.0], "command_group": "main", "enabled": true, "mount_note": "front-right", "max_thrust_n": 70.0, "local_force_axis": [0.0, 0.0, -1.0]},
+			{"instance_id": "Thruster_T3", "display_name": "T3", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [-0.55, 0.0, -0.38], "rotation_rad": [0.0, 0.0, 0.0], "command_group": "main", "enabled": true, "mount_note": "rear-left", "max_thrust_n": 70.0, "local_force_axis": [0.0, 0.0, -1.0]},
+			{"instance_id": "Thruster_T4", "display_name": "T4", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [0.55, 0.0, -0.38], "rotation_rad": [0.0, 0.0, 0.0], "command_group": "main", "enabled": true, "mount_note": "rear-right", "max_thrust_n": 70.0, "local_force_axis": [0.0, 0.0, -1.0]},
+			{"instance_id": "Thruster_T5", "display_name": "T5", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [-0.32, 0.0, 0.0], "rotation_rad": [1.570796, 0.0, 0.0], "command_group": "vertical", "enabled": true, "mount_note": "vertical-left", "max_thrust_n": 58.0, "local_force_axis": [0.0, 0.0, -1.0]},
+			{"instance_id": "Thruster_T6", "display_name": "T6", "template_path": "res://Levels/5_rovsim/presets/thrusters/generic_t35.rovthruster.json", "position_m": [0.32, 0.0, 0.0], "rotation_rad": [1.570796, 0.0, 0.0], "command_group": "vertical", "enabled": true, "mount_note": "vertical-right", "max_thrust_n": 58.0, "local_force_axis": [0.0, 0.0, -1.0]}
+		]
+	}
+}

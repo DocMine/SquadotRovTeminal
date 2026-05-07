@@ -47,7 +47,6 @@ func _ready() -> void:
 func _enter_tree() -> void:
 		# 下面是异步加载代码, 开始尝试加载
 	if TargetScenePath.length()>0:
-		print(\"loadingScene: \",TargetScenePath)
 		ResourceLoader.load_threaded_request(TargetScenePath,\"\",true)
 	'''
 	elif BreakScenePath:
@@ -173,7 +172,7 @@ energy = 6.0
 texture = SubResource("GradientTexture2D_3a1rt")
 
 [node name="Timer" type="Timer" parent="." unique_id=935089309]
-wait_time = 10.0
+wait_time = 0.75
 one_shot = true
 autostart = true
 

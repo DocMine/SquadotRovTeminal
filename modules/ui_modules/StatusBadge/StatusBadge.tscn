@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://modules/ui_modules/StatusBadge/StatusBadge.gd" id="1"]
+
+[node name="StatusBadge" type="PanelContainer"]
+custom_minimum_size = Vector2(78, 28)
+script = ExtResource("1")
+self_modulate = Color(0.552941, 0.627451, 0.701961, 1)
+
+[node name="LabelNode" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -28.0
+offset_top = -9.0
+offset_right = 28.0
+offset_bottom = 9.0
+grow_horizontal = 2
+grow_vertical = 2
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+unique_name_in_owner = true

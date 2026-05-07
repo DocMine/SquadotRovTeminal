@@ -20,8 +20,8 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="SquadotRovTeminal"
-run/main_scene="uid://cp14bqwofs3ay"
+config/name="SquadotRovHub"
+run/main_scene="res://Levels/1_WelcomeScene/WelcomScene.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 boot_splash/show_image=false
 boot_splash/stretch_mode=0
@@ -30,10 +30,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-AmbientAPI="*uid://cmbh88h6yljhy"
-AmbientParser="*uid://dcdrqnwmpgvk4"
-AmbientFileHandler="*uid://dnh8sqjyu74hs"
-AmbientMaterialMaker="*uid://nig0lamfd3mv"
+UICore="*res://modules/ui_modules/0_Core_Autoload/UICore.gd"
 
 [compression]
 
@@ -48,7 +45,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ambientcg/plugin.cfg", "res://addons/gdserial/plugin.cfg", "res://addons/graph_2d/plugin.cfg", "res://addons/tau-plot/plugin.cfg")
+enabled=PackedStringArray("res://addons/gdserial/plugin.cfg", "res://addons/graph_2d/plugin.cfg", "res://addons/tau-plot/plugin.cfg")
 
 [input]
 

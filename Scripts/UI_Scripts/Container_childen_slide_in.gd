@@ -1,3 +1,4 @@
+## 本脚本负责对应场景或模块的局部逻辑与节点协作。
 extends VBoxContainer
 # 这是给Container写的脚本，作用是提供两个将子节点滑入和滑出的动画
 

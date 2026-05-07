@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Levels/5_rovsim/scripts/sim/rov_controller.gd" id="1_controller"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_body"]
+size = Vector3(1.05, 0.36, 0.78)
+
+[sub_resource type="StandardMaterial3D" id="Material_body"]
+albedo_color = Color(0.12, 0.36, 0.48, 1)
+roughness = 0.58
+
+[sub_resource type="BoxShape3D" id="BoxShape_body"]
+size = Vector3(1.05, 0.36, 0.78)
+
+[sub_resource type="SphereMesh" id="SphereMesh_marker"]
+radius = 0.055
+height = 0.11
+
+[sub_resource type="StandardMaterial3D" id="Material_imported_frame"]
+albedo_color = Color(0.55, 0.68, 0.72, 1)
+roughness = 0.52
+
+[node name="ROV" type="Node3D"]
+script = ExtResource("1_controller")
+
+[node name="ROVBody" type="RigidBody3D" parent="."]
+unique_name_in_owner = true
+mass = 50.0
+gravity_scale = 1.0
+freeze = true
+
+[node name="BodyMesh" type="MeshInstance3D" parent="ROVBody"]
+mesh = SubResource("BoxMesh_body")
+surface_material_override/0 = SubResource("Material_body")
+
+[node name="ImportedFrameRoot" type="Node3D" parent="ROVBody"]
+unique_name_in_owner = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ROVBody"]
+shape = SubResource("BoxShape_body")
+
+[node name="Thrusters" type="Node3D" parent="ROVBody"]
+unique_name_in_owner = true
+
+[node name="CenterOfBuoyancyMarker" type="MeshInstance3D" parent="ROVBody"]
+position = Vector3(0, 0.18, 0)
+mesh = SubResource("SphereMesh_marker")
